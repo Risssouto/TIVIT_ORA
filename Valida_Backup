@@ -1,0 +1,16 @@
+set linesize 2000 pagesize 9999; 
+col qtd_lida for a20; 
+col qtd_escrita for a20; 
+col tempo_gasto for a20; 
+col hora_inicio for a20; 
+col hora_fim for a20; 
+col status for a25; 
+col midia for a15; 
+select to_char(start_time,'dd/mm/yyyy hh24:mi') hora_inicio, 
+to_char(end_time,'dd/mm/yyyy hh24:mi') hora_fim, 
+session_recid, session_stamp,input_type tipo_backup,status, 
+input_bytes_display qtd_lida, output_bytes_display qtd_escrita, 
+time_taken_display tempo_gasto, output_device_type midia 
+from v$rman_backup_job_details 
+where start_time > trunc(sysdate) -30 
+order by start_time;
