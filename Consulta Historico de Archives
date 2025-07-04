@@ -1,0 +1,8 @@
+set lines 400 
+set pages 400 
+alter session set nls_date_format='dd/mm/yy hh24:mi:ss'; 
+select trunc(FIRST_TIME,'hh') data_hora,count(*) qtd_archives, round(sum(blocks*block_size/1024/1024)) tamanho_mb  
+from v$archived_log 
+where to_char(trunc(FIRST_TIME,'hh'),'YYYYMM') = to_char(sysdate-1,'YYYYMM') 
+group by trunc(FIRST_TIME,'hh') 
+order by trunc(FIRST_TIME,'hh'); 
