@@ -1,0 +1,372 @@
+----------------------------------------------------------------------
+RESIZE TABLESPACE
+------------------------------------------------------------------------------------------------------------------------------ 
+
+set pagesize 5555
+column dummy noprint
+column  pct_used          format 999.9       heading "%|Used"
+column  name              format a20         heading "Tablespace Name"
+column  mbytes            format 999,999,999 heading "MBytes"
+column  used              format 999,999,999 heading "Used"
+column  free              format 999,999,999 heading "Free"
+column  mbytes_largest    format 999,999,999 heading "Largest"
+col file_name for a60
+break   on report
+compute sum of mbytes on report
+compute sum of free on report
+compute sum of used on report
+select nvl(b.tablespace_name, nvl(a.tablespace_name,'UNKOWN')) name,
+       mbytes_alloc mbytes, mbytes_alloc-nvl(mbytes_free,0) used,
+       nvl(mbytes_free,0) free, ((mbytes_alloc-nvl(mbytes_free,0))/mbytes_alloc)*100 pct_used,
+       nvl(mbytes_largest,0) largest
+from ( select sum(bytes)/1024/1024 mbytes_free,
+              round(max(bytes)/1024/1024,2) mbytes_largest,
+              tablespace_name
+       from  sys.dba_free_space
+       group by tablespace_name ) a,
+     ( select sum(bytes)/1024/1024 mbytes_alloc,
+              tablespace_name
+       from sys.dba_data_files
+       group by tablespace_name )b
+where a.tablespace_name (+) = b.tablespace_name
+order by 5 desc;
+----------------------------------------------------------------------
+set pagesize 5555
+set linesize 500
+column file_name format a50
+undef tablespace
+select file_id, file_name, bytes/1024/1024,autoextensible
+from dba_data_files
+where tablespace_name = '&&tablespace'
+order by file_id
+/
+
+--alter session set container = PDB$SEED;
+
+--alter database datafile 1558 resize 32767m;
+TSDY5015
+
+
+----------------------------------------------------------------------
+set pagesize 5555
+set linesize 500
+column file_name format a50
+undef tablespace
+select file_id, file_name, bytes/1024/1024,autoextensible
+from dba_data_files
+where tablespace_name = 'TEMP2'
+order by file_id
+/
+
+
+
+alter database datafile 7 resize 11905512m;
+alter database datafile 62 resize 32767m;
+alter database datafile 63 resize 32767m;
+
+select file_id, tablespace_name, round(bytes/1024/1024) size_mb, blocks, autoextensible, increment_by, round(maxbytes/1024/1024) max_mb 
+from dba_data_files 
+order by 1;
+
+
+Comando para adicionar novo data file na table space (caso todos j  estejam no tamanho m ximo de 32767) (WINDOWS)
+----------------------------------------------------------------------------------------------------------------------------
+alter tablespace prdstg_ts_wcsites add datafile '+DATA_OL110' size 5000m;
+
+alter tablespace RETAIL_DATA add datafile '+DATA_X8' size 32767m;
+
+alter tablespace FECHA_BMT add datafile '/u01/oracle/DB/oradata/BMTDB/BMTDB/datafile/tbs_fecha_bmt_05.dbf' size 1m;
+alter tablespace FECHA_BMT add datafile '/u01/oracle/DB/oradata/BMTDB/' size 1m;
+
+/u01/oracle/DB/oradata/BMTDB/BMTDB/datafile/tbs_fe cha_bmt_05.dbf
+------------------------------------------------------------------------------------------------------------------------------ 
+COMANDO PARA ADICIONAR NOVO DATA FILE NA TABLE SPACE (CASO TODOS J  ESTEJAM NO TAMANHO M XIMO DE 32767) (UNIX)
+---------------------------------------------------------------------------------------------------------------------------- 
+alter tablespace TEMP2 add tempfile '+DATA_X8' size 32767m;  
+
+alter database tempfile 1 resize 3g;
+
+----------------------------------------------------------------------
+RESIZE TABLESPACE  TEMP
+------------------------------------------------------------------------------------------------------------------------------ 
+set lines 500 trims on
+set pagesize 5000
+select a.tablespace_name, b.Total_MB,
+b.Total_MB - round(a.used_blocks*8/1024) Current_Free_MB,
+round(used_blocks*8/1024) Current_Used_MB,
+round(max_used_blocks*8/1024) Max_used_MB
+from gv$sort_segment a,
+(select round(sum(bytes)/1024/1024) Total_MB from dba_temp_files ) b;
+
+
+
+------------------------------------------------------------------------------------------------------------------
+COMANDO PARA MUDAR O STATUS DE AUTO-REDIMENSIONAMENTO DAS TABLE SPACES (YES = ON     NO = OFF) 
+------------------------------------------------------------------------------------------------------------------------------ 
+alter database datafile 195 autoextend on;  
+
+alter database datafile 3 autoextend off;
+
+
+------------------------------------------------------------------------------------------------------------------------------
+QUERY PARA PEGAR OS  MAIORES  segmentos da tablespace 
+------------------------------------------------------------------------------------------------------------------------------ 
+Set line 200 pages 50                  
+Col segment_name for a30
+Col owner for a10
+Col segmente_type for a30
+Select owner,segment_name,segment_type,bytes/1024/1024/1024 from dba_segments where tablespace_name ='SYSTEM' order by 4; 
+------------------------------------------------------------------------------------------------------------------------------
+Obs: alterar a palavra USERS, PARA O NOME DA TABLESPACE a ser utilizada.
+Obs2: Quando copiar a resposta para o email, alterar a fonte para Courier New, pois desta forma ficara organizada a formata  o.
+------------------------------------------------------------------------------------------------------------------------------
+
+
+
+------------------------------------------------------------------------------------------------------------------------------
+SCRIPT PARA VERIFICAR SE EST  RODANDO ALGUM BACKUP NO BANCO:
+------------------------------------------------------------------------------------------------------------------------------
+SET ECHO        OFF
+SET FEEDBACK    6
+SET HEADING     ON
+SET LINESIZE    180
+SET PAGESIZE    50000
+SET TERMOUT     ON
+SET TIMING      OFF
+SET TRIMOUT     ON
+SET TRIMSPOOL   ON
+SET VERIFY      OFF
+
+CLEAR COLUMNS
+CLEAR BREAKS
+CLEAR COMPUTES
+
+COLUMN instance_name      FORMAT a10      HEADING 'Instance'
+COLUMN sid                                HEADING 'Oracle|SID'
+COLUMN serial_num                         HEADING 'Serial|#'
+COLUMN opname             FORMAT a30      HEADING 'RMAN|Operation'
+COLUMN start_time         FORMAT a18      HEADING 'Start|Time'
+COLUMN totalwork                          HEADING 'Total|Work'
+COLUMN sofar                              HEADING 'So|Far'
+COLUMN pct_done                           HEADING 'Percent|Done'
+COLUMN elapsed_seconds                    HEADING 'Elapsed|Seconds'
+COLUMN time_remaining                     HEADING 'Seconds|Remaining'
+COLUMN done_at            FORMAT a18      HEADING 'Done|At'
+
+SELECT
+    i.instance_name                                 instance_name
+  , sid                                             sid
+  , serial#                                         serial_num
+  , b.opname                                        opname
+  , TO_CHAR(b.start_time, 'mm/dd/yy HH24:MI:SS')    start_time
+  , b.totalwork                                     totalwork
+  , b.sofar                                         sofar
+  , ROUND( (b.sofar/DECODE(   b.totalwork
+                            , 0
+                            , 0.001
+                            , b.totalwork)*100),2)  pct_done
+  , b.elapsed_seconds                               elapsed_seconds
+  , b.time_remaining                                time_remaining
+  , DECODE(   b.time_remaining
+            , 0
+            , TO_CHAR((b.start_time + b.elapsed_seconds/3600/24), 'mm/dd/yy HH24:MI:SS')
+            , TO_CHAR((SYSDATE + b.time_remaining/3600/24), 'mm/dd/yy HH24:MI:SS')
+    ) done_at
+FROM
+       gv$session         a
+  JOIN gv$session_longops b USING (sid,serial#)
+  JOIN gv$instance        i ON (      i.inst_id = a.inst_id
+                                  AND i.inst_id = b.inst_id)
+WHERE
+      a.program LIKE 'rman%'
+  AND b.opname LIKE 'RMAN%'
+  AND b.opname NOT LIKE '%aggregate%'
+  AND b.totalwork > 0
+ORDER BY
+    i.instance_name
+  , b.start_time
+/
+
+
+-----------------------------------------------------------------------------------------------------------------------
+VALIDAR AREA ARCHIVE - REDO
+-----------------------------------------------------------------------------------------------------------------------
+
+alter session set nls_date_format='dd/mm/yy hh24:mi';
+set pages 1000 lines 200
+select instance_name,status,startup_time,host_name,logins from gv$instance;
+select sysdate from dual;
+
+set pages 1000 lines 1000
+col total_mb for 99999999
+select group_number,name,state,
+    total_mb, 
+    total_mb - free_mb used_mb,
+    free_mb,
+    ROUND(100 * NVL(free_mb,0) / total_mb, 2) percent_livre
+from gv$asm_diskgroup 
+where group_number > 0
+--and name in ('RP1_ARCH','RP1_REDO_A','RP1_REDO_B')
+order by GROUP_NUMBER;
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+ SCRIPT VER BACKUP PELO N MERO DE DIAS INFORMADO 
+-----------------------------------------------------------------------------------------------------------------------------
+set lines 220
+set pages 1000
+col cf for 9,999
+col df for 9,999
+col elapsed_seconds heading "ELAPSED(sec)"
+col i0 for 9,999
+col i1 for 9,999
+col l for 9,999
+col output_mbytes for 9,999,999 heading "OUTPUT(Mb)"
+col session_recid for 999999 heading "SESSION(RECID)"
+col session_stamp for 9999999999 heading "SESSION(STAMP)"
+col status for a10 trunc
+col time_taken_display for a10 heading "TIME"
+col output_instance for 9999 heading "OUT(INST)"
+select
+  j.session_recid, j.session_stamp,
+  to_char(j.start_time, 'yyyy-mm-dd hh24:mi:ss') start_time,
+  to_char(j.end_time, 'yyyy-mm-dd hh24:mi:ss') end_time,
+  (j.output_bytes/1024/1024) output_mbytes, j.status, j.input_type,
+  decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',
+                                     3, 'Tuesday', 4, 'Wednesday',
+                                     5, 'Thursday', 6, 'Friday',
+                                     7, 'Saturday') dow,
+  j.elapsed_seconds, j.time_taken_display,
+  x.cf, x.df, x.i0, x.i1, x.l,
+  ro.inst_id output_instance
+from V$RMAN_BACKUP_JOB_DETAILS j
+  left outer join (select
+                     d.session_recid, d.session_stamp,
+                     sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) CF,
+                     sum(case when d.controlfile_included = 'NO'
+                               and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
+                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) I0,
+                     sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
+                     sum(case when d.backup_type = 'L' then d.pieces else 0 end) L
+                   from
+                     V$BACKUP_SET_DETAILS d
+                     join V$BACKUP_SET s on s.set_stamp = d.set_stamp and s.set_count = d.set_count
+                   where s.input_file_scan_only = 'NO'
+                   group by d.session_recid, d.session_stamp) x
+    on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
+  left outer join (select o.session_recid, o.session_stamp, min(inst_id) inst_id
+                   from GV$RMAN_OUTPUT o
+                   group by o.session_recid, o.session_stamp)
+    ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
+where j.start_time > trunc(sysdate)-&NUMBER_OF_DAYS
+order by j.start_time;
+
+
+-------------------------------------------------------------------------------------------------------------------
+-- SCRIPT VER BACKUP --
+-------------------------------------------------------------------------------------------------------------------
+
+set lines 150
+set pages 900
+col start for a20
+col end for a20
+col status format a11
+col input_bytes_display format a10
+col output_bytes_display format a10
+col status_weight format 99999
+SELECT 
+    to_char(start_time,'YYYY.MM.DD HH24:MI:SS') "Start" ,
+    to_char(end_time,'YYYY.MM.DD HH24:MI:SS') "End",
+    status,
+    status_weight, 
+    input_type,  
+    input_bytes_display, 
+    output_bytes_display
+FROM 
+    V$RMAN_BACKUP_JOB_DETAILS
+WHERE 
+    ( start_time between (SYSDATE - 1) and  (SYSDATE ))
+order by 
+    start_time;
+
+------------------------------------------------------------------------------------------------------------------
+TABLESPACE MARCA D AGUA (SERVER PARA VERIFICAR O QUANTO CADA TABLE SPACE UTILIZA, E O QUANTO DE ESPA O PODE SER DEVOLVIDO PARA O BANCO)
+(Utilizar em  ltimo caso, se o disco n o houver espa o, e o tamanho da table space  ap s este resize n o ficar maior que 98%) 
+-------------------------------------------------------------------------------------------------------------------
+
+set verify off
+set lines 200
+column tablespace_name form a23
+column file_id format 99999 word_wrapped
+column cmd format a100 word_wrapped
+set trimspool on 
+select c.tablespace_name, a.file_id, 'alter database datafile '''||file_name||''' resize ' ||
+       ceil( (nvl(hwm,1)*c.block_size )/1024/1024 )  || 'm;' cmd, c.status,
+       ceil( blocks*c.block_size/1024/1024) - ceil( (nvl(hwm,1)*c.block_size)/1024/1024 ) savings,    
+       a.bytes/1024/1024 bytes
+from dba_data_files a, dba_tablespaces c,
+     ( select file_id, max(block_id+blocks-1) hwm
+         from dba_extents
+        group by file_id ) b 
+where a.file_id = b.file_id(+)
+AND A.TABLESPACE_NAME='FECHA_BMT' 
+and a.tablespace_name=c.tablespace_name
+and c.contents <> 'UNDO'
+and ceil( blocks*c.block_size/1024/1024) - ceil( (nvl(hwm,1)*c.block_size)/1024/1024 ) > 0
+order by savings
+/
+------------------------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------
+PROJE  O DE CRESCIMENTO BASEADO NO DIA
+--------------------------------------------------------------------------------------------------------------------------
+
+SET feedback off 
+SET lines 180
+SET head on
+COL "Create_Time" format a20
+COL name format a30
+COL curr_size_mb format 999,999,999
+COL growth_per_day_mb format 999,999,999
+COL growth_120_days_mb format 999,999,999
+COL growth_240_days_mb format 999,999,999
+COL projection_365_days_mb format 999,999,999
+ALTER SESSION SET NLS_DATE_FORMAT='DD-MM-YYYY HH24:MI:SS';
+SELECT
+min(creation_time) "Create Time",
+ts.name,
+round(sum(df.bytes)/1024/1024) curr_size_mb,
+round( (sum(df.bytes)/1024/1024)/round(sysdate-min(creation_time)),1) growth_per_day_mb,
+round( (sum(df.bytes)/1024/1024)/round(sysdate-min(creation_time)) * 120,1) growth_120_days_mb,
+round( (sum(df.bytes)/1024/1024)/round(sysdate-min(creation_time)) * 240,1) growth_240_days_mb,
+round( (sum(bytes)/1024/1024)+((sum(df.bytes)/1024/1024)/round(sysdate-min(creation_time))*365) ) projection_365_days_mb
+FROM
+v$datafile df,
+v$tablespace ts
+WHERE df.ts#=ts.ts#
+--AND ts.name like 'TEMP'
+--AND ts.name NOT LIKE ('%UNDO%')
+--AND df.name like ('+SUL_SGX_DATA01%')
+GROUP BY df.ts#, ts.name
+ORDER BY df.ts#;
+---------------------------------------------------------------------------------------------------------------------------
+
+
+
+--select * from HISTORICO_TBS where TO_DATE(SYSDATE,'DD/MM/YYYY') - TO_DATE(DATA,'DD/MM/YYYY') < 10 and name = 'SYSAUX';   
+
+
+--select 'alter Table '||segment_name||'  rebuild online parallel (degree 4);' from dba_segments where tablespace_name = 'SYSAUX'
+and segment_name like '%WRH%' and segment_type='TABLE';
+
+
+
+
+SELECT sysdate,a.username, a.sid, a.serial#, a.osuser, b.blocks, c.sql_text
+  FROM v$session a, v$sort_usage b, v$sqlarea c
+  WHERE b.tablespace = 'TEMP'
+  and a.saddr = b.session_addr
+  AND c.address= a.sql_address
+  AND c.hash_value = a.sql_hash_value
+  AND b.blocks* 8192 > 10000
+  ORDER BY b.tablespace, b.blocks;
