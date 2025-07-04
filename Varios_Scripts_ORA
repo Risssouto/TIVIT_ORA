@@ -1,0 +1,2276 @@
+===========================================================================================================================
+LISTENER   (utilizar usuário oracle)
+===========================================================================================================================
+--no exemplo abaixo testando o banco LPP, para outros bancos trocar @Nomedainstância  
+
+
+--Verificar status do LISTENER 
+lsnrctl status 
+
+--INICIAR O LISTENER
+lsnrctl start
+
+--PARAR O LISTENER 
+lsnrctl stop
+
+--REINICIAR O LISTENER
+lsnrctl reload
+
+--VERIFICA PARAMETROS / INFORMAÇÕES (comando é o lsnrctl +a opção ex ->  lsnrctl services)
+lsnrctlLS 
+
+services – Retrieve the listener services information
+version – Display the oracle listener version information
+reload – This will reload the oracle listener SID and parameter files. This is equivalent to lsnrctl stop and lsnrctl start.
+save_config – This will save the current settings to the listener.ora file and also take a backup of the listener.ora file before overwriting it. If there are no changes, it will display the message “No changes to save for LISTENER”
+trace – Enable the tracing at the listener level. The available options are ‘trace OFF’, ‘trace USER’, ‘trace ADMIN’ or ‘trace SUPPORT’
+spawn – Spawns a new with the program with the spawn_alias mentioned in the listener.ora file
+change_password – Set the new password to the oracle listener (or) change the existing listener password.
+show – Display log files and other relevant listener information.
+
+
+https://www.devmedia.com.br/oracle-9i-conexoes-de-rede-parte-iv-configurando-o-ouvidor-listener-dinamicamente/2334
+https://www.thegeekstuff.com/2009/05/oracle-lsnrctl-listener-shutdown-and-startup-procedures/
+
+
+
+srvctl stop database -d OL92
+srvctl stop database -d DW11DSV2
+srvctl stop database -d OL853
+
+
+srvctl start database -d OL853
+srvctl start database -d DW853
+srvctl start database -d DW1173
+
+
+
+
+
+
+==========================================================================================	
+  -- STATUS DO BANCO DE DADOS
+==========================================================================================	
+--ORACLE
+==========================================================================================	
+col startup_time    for a20
+col instance_name   for a15
+col host_name       for a30
+SET lines 200
+SELECT Distinct instance_name, archiver, i.host_name, to_char(startup_time,'dd/mm/yyyy hh24:mi:ss') startup_time,
+	d.log_mode, i.status, i.logins, d.open_mode
+FROM gv$instance i, gv$database d;  
+ 
+
+==========================================================================================	 
+  --ORACLE
+==========================================================================================	
+set lines 600 pages 1000 trims on
+select host_name,instance_name,status from gv$Instance order by host_name;
+  
+  
+ --http://www.andersondba.com.br/p/scripts-performance.html  SCRIPTS PRA TUDO
+==========================================================================================
+ --  EXIBIR HORÁRIO DA INSTANCIA
+==========================================================================================
+    
+    SELECT TO_CHAR(sysdate,'dd/mm/yyyy hh24:mi:ss') instante FROM dual;
+    
+	
+set lines 300 pages 100
+col host_name for a31
+select INSTANCE_NAME, INSTANCE_NUMBER,HOST_NAME,STARTUP_TIME,STATUS,LOGINS,DATABASE_STATUS
+from gv$instance;
+	
+	
+=========================================================================================================================
+VERIFICAR ALERT LOG BANCOS
+=========================================================================================================================
+https://claudemarmartins.blogspot.com/2013/11/onde-esta-localizado-o-arquivo-de-alert.html
+
+
+
+Acessar o banco, dentro do SQL>, rodar o select:  Normalmente alerte fica dentro da pasta RDMS / tracert
+
+select * from v$diag_info;
+
+select value from v$diag_info where name='Diag Trace';
+
+select value from v$parameter where name='background_dump_dest';	
+	
+	
+==========================================================================================
+ --  PESQUISA TABLESPACES
+==========================================================================================	
+
+    Clear Columns Computes Breaks
+    set lines 200
+    set pages 200
+    col "Total(Mb)" for a10
+    col "% Free" for a10
+    compute sum of "Total(Mb)" on report
+    compute sum of "Free(Mb)" on report
+    break on report
+    SELECT  t.tablespace_name,
+            ts.contents,
+            substr(ts.status,0,7) STATUS,
+            to_char(round(nvl(t.bytes,0)/1024/1024,1)) "Total(Mb)",
+            round((nvl(nvl(f.free,ft.free),0)/1024/1024),1) "Free(Mb)",
+            to_char(round((nvl(f.free,ft.free)*100)/t.bytes,1),999.9) "% Free"
+    FROM (SELECT d.tablespace_name, sum(d.bytes) bytes FROM   dba_data_files d GROUP BY tablespace_name
+            UNION 
+          SELECT d.tablespace_name, sum(d.bytes) bytes FROM   dba_TEMP_files d GROUP BY tablespace_name) t,
+              (SELECT tablespace_name,sum(bytes) free FROM  dba_free_space GROUP BY tablespace_name) f,
+              (SELECT TABLESPACE_NAME, sum(bytes_free) free from V$TEMP_SPACE_HEADER group by tablespace_name) ft, dba_tablespaces ts
+    WHERE   t.tablespace_name = f.tablespace_name(+)
+      AND     t.tablespace_name = ft.tablespace_name(+)
+      AND     t.tablespace_name = ts.tablespace_name
+      AND     t.tablespace_name LIKE '%&Tablespace%'
+    ORDER BY 6;
+
+  -- LOGS DO NETBACKUP
+/usr/openv/netbackup/logs/user_ops/dbext/logs
+
+==========================================================================================	
+  -- PESQUISA DATAFILES
+==========================================================================================	
+
+set lines 1000
+set pages 2000
+col tablespace_name for a24
+col name for a60
+col Total(Mb) for a10
+col status1 for a7
+col status2 for a7
+col status3 for a9
+col online_status for a10
+col st_backup for a10
+col recover for a7
+col error for a10
+col "FILE#" for 9999
+SELECT	df.tablespace_name,
+	d.FILE#,
+	d.NAME,
+	df.autoextensible,
+	to_char(round(df.bytes/1024/1024,0),999999.99) "Total(Mb)",
+	d.status   VDTFILE,
+	df.STATUS  DDTFILE,
+    dh.status  HDTFILE,
+    --df.online_status,
+	b.STATUS st_backup,
+	dh.RECOVER
+    --dh.ERROR
+from v$datafile d,
+	 dba_data_files df,	
+	 v$backup b,
+	 v$datafile_header dh
+where	d.FILE# = dh.FILE#(+)
+and    	d.FILE# = b.FILE#(+)
+and    	d.FILE# = df.file_id(+)
+and     df.tablespace_name LIKE '%&Tablespace%'
+order by df.tablespace_name, d.NAME;
+
+alter database datafile [datafile] resize 4000m;
+==========================================================================================	
+  -- VERIFICAR ESPAÇO NOS DATAFILES
+==========================================================================================	
+
+set lines 200
+col datafile for a60
+col file_name for a50
+SELECT dfs.tablespace_name tablespace,
+       ddf.file_name datafile,
+       dfs.bytes / 1024 / 1024 free_mb,
+       dfs.block_id start_block,
+       (dfs.block_id + dfs.blocks) - 1 end_block, 
+       ddf.blocks last_files_block
+  from dba_free_space dfs, dba_data_files ddf
+ where dfs.tablespace_name = upper('&tablespace')
+   and dfs.file_id = ddf.file_id
+  order by ddf.file_name, dfs.block_id;
+
+==========================================================================================	
+  -- BANCO DE DADOS EM RESTRICT MODE
+==========================================================================================	
+
+alter system enable restricted session;
+
+alter system disable restricted session;
+
+==========================================================================================	
+  --VERIFICA PROCESSOS--
+==========================================================================================	
+
+set echo off
+set long 50000
+set pages 1000
+set lines 150
+col username format a15
+col osuser format a20
+COL cmd format a50
+
+--Verifica um determinado processo(exemplo 16697)--
+select a.sid SID, a.serial# SERIAL#, a.USERNAME, osuser, sql_text cmd from gv$session a, gv$process b, gv$sqlarea c
+where a.sql_address=c.address and a.paddr=b.addr --and b.spid='270'
+order by 3,4;
+==========================================================================================	
+--Verifica todos os processos--
+==========================================================================================	
+set echo off
+set long 50000
+set pages 1000
+set lines 150
+col username format a15
+col osuser format a20
+COL cmd format a50
+
+select a.sid SID, a.serial# SERIAL#, a.USERNAME, osuser, sql_text cmd from v$session a, gv$process b, gv$sqlarea c where a.sql_address=c.address and a.paddr=b.addr;
+
+select a.sid SID, a.serial# SERIAL#, a.USERNAME, osuser, sql_text cmd 
+from gv$session a, gv$process b, gv$sqlarea c 
+where a.sid = '4420'
+and a.sql_address=c.address and a.paddr=b.addr;
+
+====================================================================================================================
+DESABILITAR TRACERT PELO SID / SERIAL NO ORACLE 
+====================================================================================================================
+
+--desabilitei o trace (COMANDO PRA SER EXECUTADO DENTRO DO BANCO, LINGUAGEM SQL>)
+
+exec dbms_system.set_sql_trace_in_session(&sid,&serial,FALSE);
+
+-- deve pedir o sid ->Enter value for sid: 7836
+-- deve pedir o serial -> Enter value for serial: 59937
+--PL/SQL procedure successfully completed.
+
+==========================================================================================	
+-- LISTA SESSOES QUE ESTÃO BLOQUEANDO AS SESSOÊS   
+==========================================================================================	
+set lines 300
+set pages 1000
+column blocker format a25
+column blockee format a25
+column ' Esta Bloqueando ' for a30
+column sid_serial format a12
+select
+ (select username || ' - ' || osuser from gv$session where sid=a.sid) blocker, a.sid || ', ' ||
+ (select serial# from gv$session where sid=a.sid) sid_serial,' Esta Bloqueando ',
+ (select username || ' - ' || osuser from gv$session where sid=b.sid) blockee, b.sid || ', ' ||
+ (select serial# from gv$session where sid=b.sid) sid_serial
+ from gv$lock a, gv$lock b
+ where a.block = 1
+   and b.request > 0
+   and a.id1 = b.id1
+   and a.id2 = b.id2;
+   
+
+
+--alter system kill session '&SID, &SERIAL' immediate;
+
+---alter system kill session '957,11836,@3' immediate;
+
+---alter system kill DISCONNECT SESSION '863, 0, @4' IMMEDIATE;
+
+--'3228,55616,@4'
+--alter system kill session '31, 17246' immediate;
+--alter system kill session '2130,62711,@3' immediate;
+--alter system kill session '2245,31528,@3' immediate;
+--alter system kill session '2380,40973,@3' immediate;
+
+==========================================================================================	
+--> VERIFICAR SESSÕES EM LOCK E GERAR COMANDO PARA DAR O KILL
+==========================================================================================	
+
+  set lin 400
+       set pages 9999
+       column sess format A20
+       column module format a28
+       column action format a22
+       column kill format a80
+       column Execucao format a22
+       SELECT /*+ rule */ 'alter system kill session '||''''||ses.sid||','||ses.serial#||',@'||ses.inst_id||''''||' immediate; ' as kill, ses.status,
+            ses.inst_id,substr(DECODE(lk.request,0,'Holder: ','Waiter: ')||lk.sid,1,12) sess,ses.serial#, sql_id,
+             --lk.id1, lk.id2, lk.lmode, lk.request, lk.type, lk.inst_id,ses.module,NVL(ses.action,'-------') action,
+              ses.status, sql_id,floor(last_call_et/86400) || 'd ' || to_char(to_date(mod  (last_call_et,86400) ,'sssss'                       ),'hh24"h" mi:ss') "Execucao"
+         FROM GV$LOCK lk,
+              gv$session ses
+        WHERE (lk.id1, lk.id2, lk.type) IN
+          (SELECT id1, id2, type FROM GV$LOCK WHERE request>0)
+       and lk.inst_id=ses.inst_id
+        and lk.sid=ses.sid and substr(DECODE(lk.request,0,'Holder: ','Waiter: ')||lk.sid,1,12) like 'Holder%'
+             ORDER BY lk.id1, lk.request;
+
+
+==========================================================================================	
+--> VERIFICAR TODAS SESSÕES PELO NOME DO USUÁRIO E GERAR COMANDO PARA KILL.
+==========================================================================================	
+
+--(1º Gera comando para matar todas sessões do usuário Ativas / Inativas)
+
+select
+' alter system kill session '''||s.sid||','||s.SERIAL#||','||'@'||INST_ID||''' immediate;' 
+FROM gv$session s
+WHERE S.USERNAME in ('MLXRJR')
+and S.logon_time < (sysdate -5) AND STATUS = 'INACTIVE';
+
+--(2º Solução matar todas as sessões inativas COM MENOS DE 6hrs)
+
+select
+' alter system kill session '''||s.sid||','||s.SERIAL#||','||'@'||INST_ID||''' immediate;' 
+FROM gv$session s
+WHERE S.USERNAME in ('MATRIZV6')
+and S.logon_time < (sysdate -4/24) AND STATUS = 'INACTIVE';
+
+
+--alter system kill session '3910,6271,@2' immediate;
+selectx
+' alter system kill session '''||s.sid||','||s.SERIAL#||','||'@'||INST_ID||''' immediate;' 
+FROM gv$session s
+WHERE S.USERNAME in ('APP_MICROSTRATEGY')
+  AND STATUS = 'ACTIVE';
+
+--> Pela máquina que vem as sessões
+select
+' alter system kill session '''||s.sid||','||s.SERIAL#||','||'@'||INST_ID||''' immediate;' 
+FROM gv$session s
+WHERE UPPER(MACHINE) IN ('AS963', 'AS964', 'AS965', 'AS966', 'AS967', 'AS968', 'AS969');
+
+
+SELECT USERNAME, MACHINE, PROGRAM, LOGON_TIME, STATUS, SID, SERIAL#, INST_ID
+FROM GV$SESSION
+WHERE UPPER(MACHINE) IN ('AS963', 'AS964', 'AS965', 'AS966', 'AS967', 'AS968', 'AS969');
+
+
+-->  KILL pelo SQLID 
+
+select 'alter system kill session '''||sid||','||serial#||',@'||inst_id||''' immediate;' from gv$session 
+where sql_id='5bxbqy7t5y8xg' 
+And STATUS = 'ACTIVE';
+
+==========================================================================================	
+--> SESSÕES ATIVAS (RAC)
+==========================================================================================	
+TTITLE SKIP 1 "SESSÕES AMBIENTE RAC" SKIP 2 
+SET LINES 200 PAGES 30
+CLEAR COLUMNS
+COLUMN log_time FORMAT a19
+COLUMN sid      FORMAT 9999
+COLUMN PROCESS  FORMAT a15
+COLUMN username FORMAT a15
+COLUMN osuser   FORMAT a15
+COLUMN serial#  FORMAT 99999
+COLUMN spid     FORMAT a10
+COLUMN lockwait FORMAT 9999999
+COLUMN St       FORMAT a2
+COLUMN cx       FORMAT a2
+COLUMN machine  FORMAT a10 TRUNC
+COLUMN program  FORMAT a20 TRUNC
+COLUMN ROW_WAIT_BLOCK FORMAT a10
+SELECT * 
+  FROM (SELECT a.sid, 
+               a.serial#,
+               a.username,
+               SUBSTR(TO_CHAR(a.logon_time,' dd/mm/yy hh24:mi:ss'),1,20) log_time,
+               a.process,
+               a.osuser, 
+               b.spid,                        
+               SUBSTR(a.status,1,1) st, 
+               a.lockwait, 
+               DECODE(a.server,'NONE','',SUBSTR(a.server,1,2)) cx, 
+               a.machine,
+               a.program,
+               a.ROW_WAIT_BLOCK# 
+        FROM   gv$session a, gv$process b
+        WHERE  a.paddr = b.addr
+       -- and a.sid = 4848
+        --AND  a.lockwait IS NOT NULL 
+         --and SUBSTR(a.status,1,1) = 'A'
+	    --and SQL_ID = 'df87hc3w5dxhm'
+        ORDER BY 4 DESC);
+        --ORDER BY 4 ASC);
+TTITLE OFF;
+
+
+
+==========================================================================================	
+--> GERA COMANDO PARA MATAR AS SESSOES EM LOCK
+==========================================================================================	
+
+-- GERA COMANDO PARA MATAR AS SESSOES EM LOCK
+SELECT 'alter system kill session ' ||''''||a.sid||','||a.serial#||''' immediate;'
+        FROM   gv$session a, gv$process b
+        WHERE  a.paddr = b.addr
+        AND  a.lockwait IS NOT NULL 
+        and SUBSTR(a.status,1,1) = 'I';
+
+
+--alter system kill session '102,7783,@1'immediate;
+
+
+
+==========================================================================================	
+--> GERA COMANDO PARA MATAR AS SESSOES EM LOCK
+==========================================================================================	
+
+ALTER PROFILE default LIMIT IDLE_TIME  30; 
+ like 1
+
+
+==========================================================================================	
+  -- JOBS --
+==========================================================================================	
+
+--> VERIFICAR TODOS JOBS SCHEDULADOS / status deles
+
+select owner, job_name, LAST_START_DATE, enabled from dba_scheduler_jobs order by 2;
+
+
+-- VERIFICAR DETALHES DE EXECUÇÃO DO JOB
+select *from dba_scheduler_job_RUN_DETAILS where JOB_NAME like '%KILL_INACTIVE_SESSIONS_JOB';
+
+--> POR OWNER 
+select *from dba_scheduler_job_RUN_DETAILS where owner like '%SYS%';
+
+
+--> JOBS
+
+SET LINES 160 PAGES 100
+CLEAR COLUMNS
+COL job          FORM 99999
+COL what         FORM a35 TRUNC
+COL interval     FORM a30
+COL schema_user  FORM a15
+COL failures     FORM 9999
+ALTER SESSION SET nls_date_format='dd/mm/yyyy hh24:mi:ss';
+SELECT  job,
+        schema_user,
+        last_date,
+        next_date,
+        interval,
+        broken,
+        failures,
+        what
+FROM    dba_jobs
+ORDER BY job;
+
+select username,schemaname,status,program,type,module,action from gv$session where module='KILL_INACTIVE_SESSIONS_JOB';
+
+
+--JOBS EM EXECUÇÃO
+TTITLE LEFT SKIP 1 "JOBS EM EXECUÇÃO" SKIP 2
+SET LINES 200 PAGES 100
+CLEAR COLUMNS
+COL job          FORM 9999
+COL interval     FORM a40
+COL schema_user  FORM a15
+COL failures     FORM 9999
+ALTER SESSION SET nls_date_format='dd/mm/yyyy hh24:mi:ss';
+SELECT  sid,
+        job,
+        last_date,
+        last_sec,
+        this_date,
+        this_sec,
+        failures,
+        instance
+FROM    dba_jobs_running
+ORDER BY job;
+TTITLE OFF
+
+
+
+
+
+http://limadba.blogspot.com/2017/04/verificar-jobs-do-oracle.html
+
+==========================================================================================	
+  -- ORACLE RAC --
+==========================================================================================	
+
+srvctl start  service -d gipe
+
+==========================================================================================	
+  -- ASM DISK GROUPS
+==========================================================================================	
+
+TTITLE LEFT SKIP 1 "ASM DISK GROUPS" SKIP 2
+    SET LINES 120 PAGES 999
+    CLEAR COLUMNS
+    COLUMN "HOSTNAME"   FORMAT a15
+    COLUMN "INSTANCE"   FORMAT a10
+    COLUMN "INST_CAPTURA" FORMAT a18
+    COLUMN "GROUP"      FORMAT 999  
+    COLUMN "GROUP_NAME" FORMAT a15
+    COLUMN "STATE"      FORMAT a10
+    COLUMN "TYPE"       FORMAT a7
+    COLUMN "TOTAL_MB"   FORMAT 9,999,000
+    COLUMN "FREE_MB"    FORMAT 9,999,000
+    SELECT  host_name "HOSTNAME",
+	    instance_name "INSTANCE",
+	    SUBSTR(TO_CHAR(sysdate,' dd/mm/yy hh24:mi:ss'),1,20) "INST_CAPTURA",
+            group_number  "GROUP",
+            name          "GROUP_NAME",
+            state         "STATE",
+            type          "TYPE",
+            total_mb      "TOTAL_MB",
+            free_mb       "FREE_MB",
+            DECODE(100 - ceil(FREE_MB/TOTAL_MB*100), NULL, 100, 100 - ceil(FREE_MB/TOTAL_MB*100)) "% USADO"
+    FROM    gv$asm_diskgroup, gv$instance;
+TTITLE OFF
+
+
+==========================================================================================	
+  -- BACKUP OBJETOS
+==========================================================================================	
+-- Para fazer o backup dos objetos, no comando DBMS ('tipo do objeto','Nome do objeto','owner do objeto') text FROM dual;
+-- Para voltar o backup, só rodar o texto gerado, adicionando no comando Create sem as aspas "or Replace"    
+
+
+SET LINES 300 PAGES 0 LONG 10000
+COLUMN text FORMAT a200
+SPOOL PK_P2K_VIGNCIA_PRECO.BKP
+SELECT dbms_metadata.get_ddl('INDEX','PK_P2K_VIGNCIA_PRECO','DBCSI_P2K') text FROM dual;
+SPOOL OFF
+
+
+SET LINES 300 PAGES 0 LONG 10000
+COLUMN text FORMAT a200
+SPOOL PG_INTERFACE_SAP.BKP
+SELECT dbms_metadata.get_ddl('PROCEDURE','LIMPAR_LOG_INTEGRACAO_SISTEMAS','TASY') text FROM dual;
+SPOOL OFF
+
+
+SET LINES 300 PAGES 0 LONG 10000
+COLUMN text FORMAT a200
+SPOOL PG_INTERFACE_SAP.BKP
+SELECT dbms_metadata.get_ddl('PROCEDURE','LIMPAR_LOG_INTEGRACAO_SISTEMAS','TASY') text FROM dual;
+SPOOL OFF
+
+
+
+==========================================================================================	
+  -- BACKUP OBJETOS PELO OEM ENTERPRISE MANAGER
+==========================================================================================
+Abre O BANCO NO OEM
+
+Seleciona -> Schema -> Progams/Programas 
+(Verifica o tipo do objeto lá) 
+Na tela que abrirá, informa os campos:
+SCHEMA NAME -> É O OWNER (EXEMPLO ADMRMS)
+Objetc NAME -> É O TIPO DO OBJETO  (EXEMPLO: PACKAGE)
+status -> se ESTÁ VÁLIDO / INVÁLIDO / OU TODOS (é sempre bom válidar no banco antes  ex: ALL)
+Na parte de baixo -> GENERATE DLL / GERAR DLL  e colocar GO (é sempre utilizar essa opção para CRIAR O TEXTO DO OBJETO 
+JÁ PARA CRIAR NOVAMENTE CASO NECESSÁRIO). 
+
+Exemplo: 
+
+ADMRMS
+PACKAGE
+GENERATE DLL 
+
+Clicar em GO , o texto deve aparecer na tela .
+
+
+
+==========================================================================================	
+  --  OBJETOS INVÁLIDOS
+==========================================================================================	
+alter session set nls_date_format = 'DD-MON-YYYY HH24:MI:SS';
+set lines 250;
+SET PAGES 999
+col OBJECT_NAME for a30
+COL OWNER for a30
+col OBJECT_TYPE for a20
+SELECT owner, object_type, object_name,CREATED, status,LAST_DDL_TIME
+  FROM dba_objects
+WHERE
+   status='INVALID'
+   --and object_name LIKE '%GET_MESSAGE%'
+   --and OBJECT_TYPE ='PACKAGE BODY' 
+   --and OWNER ='ADMRMS'
+ORDER BY 1;
+
+
+
+
+
+--Verifica INDEX INVÁLIDO
+select OWNER, INDEX_NAME, STATUS from dba_indexes where status='inVALID';
+
+-- ALTER INDEX RADM01.PK_W_RTL_INVTSF_IT_LC_DY_F rebuild online parallel 12 nologging;
+-- alter index my_idx rebuild online parallel 63 nologging;
+-- SELECT COUNT(*) FROM RADM01.W_RTL_INVTSF_IT_LC_DY_F;
+
+
+select column_name, count(1) from table RADM01.W_RTL_INVTSF_IT_LC_DY_F group by column_name having count (column_name) > 1;
+
+--RECOMPILA UM ÚNICO OBJETO  (owner.nome do objeto) Alterar o tipo 
+ALTER PACKAGE ADMRMS.MV_LOC_PRIM_ADDR COMPILE BODY;  --[ou compile body para o caso de packages];
+
+ALTER MATERIALIZED VIEW ADMRMS.MV_L10N_ENTITY COMPILE;   --[todos objetos são compile menos package body];
+
+
+--MOSTRA OS ERROS DO OBJETO 
+SHOW ERRORS PACKAGE BODY SAF.SAF_MMAG31_ECF_NOVO;
+
+--DROPA/DELETA O OBJETO
+DROP PACKAGE SYS.INN_R82_FECP_ST_CPROC;
+DROP PACKAGE BODY SYS.INN_R82_FECP_ST_CPAR;
+DROP PACKAGE BODY SYS.INN_R82_FECP_ST_CPROC;
+
+--CRIA UM SCRIPT PRA RECOMPILAR TODOS OBJETOS DE UM OWNER QUE SÃO PACKAGE BODY
+SELECT 'ALTER PACKAGE ' || OWNER || '.' || OBJECT_NAME || ' COMPILE BODY;' FROM ALL_OBJECTS WHERE STATUS = 'INVALID' AND OWNER = 'TS_MASTER' AND OBJECT_TYPE = 'PACKAGE BODY';
+
+--CRIA UM SCRIPT PRA RECOMPILAR TODOS OBJETOS DE UM OWNER QUE NÃO SÃO PACKAGE BODY (OU SEJA TODOS OS OUTROS)
+SELECT 'ALTER ' || OBJECT_TYPE || ' ' || OWNER || '.' || OBJECT_NAME || ' COMPILE;' FROM ALL_OBJECTS WHERE STATUS = 'INVALID' AND OWNER = 'ADMRMS' AND OBJECT_TYPE != 'PACKAGE BODY';
+
+
+
+--RECOMPILA TODOS OBJETOS INVALIDOS 
+SELECT 'ALTER '||OBJECT_TYPE||' '||OWNER||'.'||OBJECT_NAME||
+	CASE
+	   WHEN OBJECT_TYPE = 'PACKAGE BODY' THEN ' COMPILE BODY;'
+	   ELSE ' COMPILE;'
+	END
+  FROM DBA_OBJECTS
+WHERE STATUS <> 'VALID'
+  AND OWNER <> 'SYS'
+  AND OBJECT_TYPE IN ('PROCEDURE','FUNCTION','PACKAGE BODY','PACKAGE','SYNONYM'); 
+
+
+-- RECOMPILA TODOS OS OBJETOS (até os válidos)
+exec sys.utl_recomp.recomp_serial(); 
+
+
+
+ttitle left skip 1 "QUANTIDADE DOS OBJETOS INVÁLIDOS" skip 2
+set lines 125 pages 300
+clear columns
+col owner       for a20
+col object_type for a20
+select  owner,
+		object_type,
+		status,
+		count(*) "TOTAL"
+from 	dba_objects 
+where 
+status <> 'VALID'
+--AND OWNER = 'FATUR' 
+group by owner, object_type, status
+order by owner, object_type;
+ttitle off;
+
+
+
+ttitle left skip 1 "LISTA DOS OBJETOS INVÁLIDOS" skip 2
+set pagesize 300
+set lines 125
+col owner for a20
+col object_type for a20
+col object_name for a40
+select	owner,
+        object_name,
+	    object_type,
+	    status
+from 	dba_objects 
+where status <> 'VALID'
+--AND OWNER = 'FATUR' 
+order by owner, object_name, object_type;
+ttitle off;
+
+
+
+select line,text from dba_source wheRE NAME ='P_ABTCCAPER';
+
+
+SELECT 'ALTER PACKAGE ' || OWNER || '.' || OBJECT_NAME || ' COMPILE BODY;' FROM ALL_OBJECTS WHERE STATUS = 'INVALID' AND OWNER = 'MSAF' AND OBJECT_TYPE = 'PACKAGE BODY';
+
+SELECT 'ALTER ' || OBJECT_TYPE || ' ' || OWNER || '.' || OBJECT_NAME || ' COMPILE;' FROM ALL_OBJECTS WHERE STATUS = 'INVALID' AND OWNER = 'MSAF' AND OBJECT_TYPE != 'PACKAGE BODY';
+
+==========================================================================================	
+  --  LISTA DA QUANTIDADE DOS OBJETOS DO USUÁRIO
+==========================================================================================
+
+ttitle left skip 1 "QUANTIDADE DOS OBJETOS DO USUÁRIO" skip 2
+set lines 125 pages 300
+clear columns
+col owner       for a20
+col object_type for a20
+select  owner,
+		object_type,
+		status,
+		count(*) "TOTAL"
+from 	dba_objects 
+where 	owner IN ('ODI_TMP_RH')
+--, 'CCACONTAB', 'CCAMKT', 'CCAAPLIC')
+group by owner, object_type, status
+order by owner, object_type;
+ttitle off;
+
+==========================================================================================	
+  --  VERIFICAR QUEM ESTA USANDO O OBJETO ORACLE
+==========================================================================================
+
+
+COLUMN object FORMAT A30
+COLUMN type FORMAT A15
+COLUMN sid FORMAT 9999
+COLUMN username FORMAT A20
+COLUMN osuser FORMAT A10
+COLUMN program FORMAT A40
+SELECT a.object,
+a.type,
+a.sid,
+b.username,
+b.osuser,
+b.program
+FROM v$access a,
+v$session b
+WHERE a.sid = b.sid
+AND a.owner = UPPER('&ENTER_SCHEMA_NAME')
+AND a.object = upper('&OBJECT_NAME')
+ORDER BY a.object
+/
+
+========================================================================================================================	
+  --  SCRIPT PARA VERIFICAR QUANTIDADE DE SESSÕES / PROCESSO E O QUANTIDADE MÁXIMA POSSIVEL DE SESSÕES / PROCESSOS
+========================================================================================================================
+SET LINES 500 TRIMS ON PAGESIZE 5000
+col resource_namer for a40
+select * from gv$resource_limit where RESOURCE_NAME in ('processes','sessions');
+
+
+
+--ALTER SYSTEM KILL SESSION '860,63810,@4' IMMEDIATE;
+'2223,1831,@2'
+==========================================================================================	
+  --  SCRIPT PARA VERIFICAR SESSÕES POR CONSUMO DE PGA/MEMÓRIA
+==========================================================================================
+
+ALTER SESSION SET NLS_DATE_FORMAT='DD/MM/YY HH24:MI';
+SET LINES 500 TRIMS ON PAGESIZE 5000
+COL SPID                  FOR A8
+COL "SID,SERIAL@INST"     FOR A18
+COL "BLK_SESS"            FOR A8
+COL USERNAME              FOR A20
+COL SQL_ID                FOR A14
+COL SQL_ID_CHILD_N        FOR A17
+COL EVENT                 FOR A38
+COL STATUS                FOR A10
+COL "LCALL/SIW"           FOR A16
+COL WAIT_CLASS            FOR A14
+COL MACHINE               FOR A27
+SELECT 
+             P.SPID,
+             '''' || S.SID  || ',' || S.SERIAL# || ',@' || S.INST_ID ||'''' "SID,SERIAL@INST",
+             S.BLOCKING_SESSION || '-' || S.BLOCKING_INSTANCE AS "BLK_SESS",
+             S.USERNAME || '  ' || S.CLIENT_IDENTIFIER AS "USERNAME",
+             --S.PREV_SQL_ID,
+             S.SQL_ID || ',' || S.SQL_CHILD_NUMBER "SQL_ID_CHILD_N",
+       --     S.EVENT,
+             S.STATUS,
+             S.LAST_CALL_ET || '/' || S.SECONDS_IN_WAIT AS "LCALL/SIW",
+             --S.PROGRAM,
+             --S.SERVICE_NAME,
+             --S.MACHINE,
+             --S.MODULE,
+             --S.CLIENT_INFO,
+             --S.WAIT_CLASS
+             --S.ACTION,
+             S.LOGON_TIME,
+             p.pga_used_mem,
+             p.pga_alloc_mem
+       FROM GV$SESSION S, GV$PROCESS P
+       WHERE   P.ADDR = S.PADDR
+         AND   S.INST_ID = P.INST_ID
+         AND S.USERNAME IS NOT NULL
+         --AND      S. CLIENT_IDENTIFIER='M5608502'
+         AND S.USERNAME NOT IN ('SYS','SYSRAC','SYSMAN','DBSNMP','SYSTEM')
+         --AND S.USERNAME='SYSTEM'
+         --AND S.USERNAME='ALEXANDRE01'
+         AND S.STATUS='ACTIVE'
+         --AND S.MACHINE in ('UXDEFK-QBR1','UXDEFK-VAS18')
+         --AND S.EVENT='%PX%'
+         --AND      S.SQL_ID='5skdyrb9cfa6y'
+         --AND      S.SID=945
+         --AND S.INST_ID=2
+         --AND S.BLOCKING_SESSION=17
+         --AND S.WAIT_CLASS='Other'
+         --AND S.WAIT_CLASS='Configuration'
+         --AND S.MACHINE='elpa10db03pr'
+ORDER BY S.LAST_CALL_ET
+/
+
+
+==========================================================================================	
+  --  GERA SCRIPT PARA DROP DOS OBJETOS DE UM USUÁRIO
+==========================================================================================
+
+set pagesize 0
+set lines 300
+!rm drop_objectos.sql
+spo drop_objectos.sql
+select	'DROP ' || object_type || ' ' ||  owner || '.' || object_name || ' cascade constraints;' AS COMANDO
+from dba_objects
+where owner = 'CCA'
+and object_type = 'TABLE'     
+order by object_type, object_name;
+select	'DROP ' || object_type || ' ' ||  owner || '.' || object_name || ';' AS COMANDO
+from dba_objects
+where owner = 'CCA'
+and object_type in ('FUNCTION','INDEX','LIBRARY','PACKAGE','PROCEDURE','SEQUENCE','TRIGGER','TYPE','VIEW')     
+order by object_type, object_name;
+spo off
+!ls -ltr drop_objectos.sql
+
+==========================================================================================	
+  --  IMPORT E EXPORT DE OBJETOS
+==========================================================================================
+
+
+exp \'/ as sysdba\' file=exp_cca_anfora.dmp log=exp_cca_anfora.log OWNER=CCA feedback=10000
+
+imp \'/ as sysdba\' file=exp_fatur.dmp log=imp_fatur.log fromuser=FATUR touser=FATUR feedback=10000 
+
+imp \'/ as sysdba\' file=exp_cca_anfora.dmp log=exp_cca_anfora.log fromuser=CCA touser=CCA feedback=10000 
+--ignore=y
+
+imp \'/ as sysdba\' file=exp_CCA_bellatrix_blue.dmp log=imp_CCA_bellatrix_white.log fromuser=CCA touser=CCA feedback=10000 
+imp \'/ as sysdba\' file=exp_CCACONTAB_bellatrix_blue.dmp log=imp_CCACONTAB_bellatrix_white.log fromuser=CCACONTAB touser=CCACONTAB feedback=10000 
+imp \'/ as sysdba\' file=exp_CCAMKT_bellatrix_blue.dmp log=imp_CCAMKT_bellatrix_white.log fromuser=CCAMKT touser=CCAMKT feedback=10000 
+imp \'/ as sysdba\' file=exp_CCAAPLIC_bellatrix_blue.dmp log=imp_CCAAPLIC_bellatrix_white.log fromuser=CCAAPLIC touser=CCAAPLIC feedback=10000 
+
+exp \'/ as sysdba\' file=exp_CCA_bellatrix_blue.dmp log=exp_CCA_bellatrix_blue.log OWNER=CCA feedback=10000
+exp \'/ as sysdba\' file=exp_CCACONTAB_bellatrix_blue.dmp log=exp_CCACONTAB_bellatrix_blue.log OWNER=CCACONTAB feedback=10000
+exp \'/ as sysdba\' file=exp_CCAMKT_bellatrix_blue.dmp log=exp_CCAMKT_bellatrix_blue.log OWNER=CCAMKT feedback=10000
+exp \'/ as sysdba\' file=exp_CCAAPLIC_bellatrix_blue.dmp log=exp_CCAAPLIC_bellatrix_blue.log OWNER=CCAAPLIC feedback=10000
+
+exp \'/ as sysdba\' file=backup_tabelas.dmp log= backup_tabelas.log  FEEDBACK=1000 STATISTICS=none
+
+'
+
+
+
+
+======================================================================================
+Validar Area de Archive
+=======================================================================================
+set pages 1000 lines 1000
+col total_mb for 999999999999
+select to_char(sysdate,'dd/mm/yyyy HH:mi:ss')data_hora, 
+group_number,name,state,
+    total_mb, 
+    total_mb - free_mb used_mb,
+    free_mb,
+    ROUND(100 * NVL(free_mb,0) / total_mb, 2) percent_livre
+from dual, gv$asm_diskgroup
+where group_number > 0
+--and name in ('RECOC2')
+order by GROUP_NUMBER;
+
+
+==========================================================================================	
+  -- ARCHIVES GERADOS POR DIA DO MES
+==========================================================================================	
+TTITLE LEFT SKIP 1 "NUMERO DE REDO LOGS ESCRITOS POR DIA DO MES" SKIP 2
+SET LINES 200 PAGES 100
+CLEAR COLUMNS
+COL np 	 NOPRINT
+COL "00"  FORM 099 
+COL "01"  FORM 099 
+COL "02"  FORM 099
+COL "03"  FORM 099 
+COL "04"  FORM 099 
+COL "05"  FORM 099
+COL "06"  FORM 099 
+COL "07"  FORM 099 
+COL "08"  FORM 099
+COL "09"  FORM 099 
+COL "10"  FORM 099 
+COL "11"  FORM 099
+COL "12"  FORM 099 
+COL "13"  FORM 099 
+COL "14"  FORM 099
+COL "15"  FORM 099 
+COL "16"  FORM 099 
+COL "17"  FORM 099
+COL "18"  FORM 099 
+COL "19"  FORM 099 
+COL "20"  FORM 099
+COL "21"  FORM 099 
+COL "22"  FORM 099 
+COL "23"  FORM 099
+SELECT TRUNC(first_time) np, TO_CHAR(first_time,'DD/MM-DY') "DIA",
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'00',1,0)) "00" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'01',1,0)) "01" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'02',1,0)) "02" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'03',1,0)) "03" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'04',1,0)) "04" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'05',1,0)) "05" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'06',1,0)) "06" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'07',1,0)) "07" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'08',1,0)) "08" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'09',1,0)) "09" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'10',1,0)) "10" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'11',1,0)) "11" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'12',1,0)) "12" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'13',1,0)) "13" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'14',1,0)) "14" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'15',1,0)) "15" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'16',1,0)) "16" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'17',1,0)) "17" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'18',1,0)) "18" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'19',1,0)) "19" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'20',1,0)) "20" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'21',1,0)) "21" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'22',1,0)) "22" , 
+	   SUM(DECODE(TO_CHAR(first_time,'HH24'),'23',1,0)) "23" 
+FROM v$loghist
+GROUP BY TRUNC(first_time), TO_CHAR(first_time,'DD/MM-DY')
+ORDER BY TRUNC(first_time);
+TTITLE OFF
+
+==========================================================================================	
+  --  DB2
+==========================================================================================	
+
+-- Verifica backup do DB2.
+db2 list history backup all for bwp
+
+
+db2 "ALTER TABLESPACE "E05#BTABD" EXTEND ( FILE '/db2/E04/sapdata1/NODE0000/E05#BTABD.container001' 5000M) ON DBPARTITIONNUM ( 0 )"
+;
+COMMIT WORK
+;
+
+220000000
+250880000000
+
+select sid, serial#, status, username, osuser, program, blocking_session blocking, event from gv$session where blocking_session is not null;
+
+
+
+====================================================================================================================
+-- VERIFICAR QUAL MODULO DO SAP ESTA RODANDO O SQL_ID
+====================================================================================================================
+
+select module from gv$sql where sql_id = '1k0fab2khrugk';
+select module from gv$sql where sql_id = 'f4m8ngprnwcaw';  
+
+
+
+
+=================================================================================================
+Verifica média de archive gerada por hora
+=================================================================================================
+select to_char(completion_time,'yyyy/mm/dd hh24') "COMPLETE HOUR"
+,count(*) logswitch
+,round((sum(blocks*block_size)/1024/1024/1024)) "REDO PER HOUR (GB)"
+from gv$archived_log
+--where to_char(completion_time,'dd/mm/yyyy hh24') like to_char('03/03/2020%')
+group by to_char(completion_time,'yyyy/mm/dd hh24')
+order by 1; 
+
+
+
+=================================================================================================
+Verifica Consumo de archive nos últimos dias: 
+=================================================================================================
+select trunc(to_date(completion_time,'yyyy/mm/dd hh24')) rundate
+,count(*) logswitch
+,round((sum(blocks*block_size)/1024/1024/1024)) "REDO PER DAY (GB)"
+from gv$archived_log
+group by trunc(to_date(completion_time,'yyyy/mm/dd hh24'))
+order by 1;
+
+
+
+======================================================================================
+Verificar Consumo Area de Archive
+=======================================================================================
+set pages 1000 lines 1000
+col total_mb for 99999999
+select to_char(sysdate,'dd/mm/yyyy HH:mi:ss')data_hora, 
+group_number,name,state,
+    total_mb, 
+    total_mb - free_mb used_mb,
+    free_mb,
+    ROUND(100 * NVL(free_mb,0) / total_mb, 2) percent_livre
+from dual, gv$asm_diskgroup 
+where group_number > 0
+--and name in ('RP1_ARCH','RP1_REDO_B','RP1_REDO_A')
+order by group_number;
+
+set pages 1000 lines 1000
+col total_mb for 99999999
+select to_char(sysdate,'dd/mm/yyyy HH:mi:ss')data_hora, 
+group_number,name,state,
+    total_mb, 
+    total_mb - free_mb used_mb,
+    free_mb,
+    ROUND(100 * NVL(free_mb,0) / total_mb, 2) percent_livre
+from dual, gv$asm_diskgroup 
+where group_number > 0
+and name in ('DATA_OL06')
+order by group_number;
+	
+==========================================================================================
+
+
+
+====================================================================================================
+VALIDAR AREA DE ARCHIVE
+====================================================================================================
+
+Acessar o banco, dentro do banco:  
+
+-- Este comando tras as informações sobre os archives no servidor.
+archive log list;
+ 
+
+
+-- Este comando tras as informações sobre o espaço utilizado e o espaço livre da área de archive
+column (space_used/1048576) heading "Espaco Utilizado"
+column (space_limit/1048576) heading "Espaco Livre"
+select (space_used/1048576),(space_limit/1048576) from gv$recovery_file_dest;
+
+
+
+-- Passos para alterar modo de NOArchiveLOG (Banco não executa os archives e não gera as logs) para ArchiveLOG (Banco executa os archives e gera as logs)
+--baixar o banco, archive log start (inicia), archive log stop (para)
+shutdown immediate;
+--Monta o banco, porém com ele "fechado"
+startup mount; 
+--Inicia o log de archive: archive log start (inicia), archive log stop (para)
+alter database archivelog;
+archive log start; 
+--Inicia o banco/abre o banco para conexões
+alter database open;
+--Após configurado deverá configurar ainda o local onde os archives irão ser gerados através do parâmetro LOG_ARCHIVE_DEST_n. Com este parâmetro pode ser definido em até 10 diretórios ou discos diferentes por recomendação da oracle.
+alter system set 
+log_archive_dest_1='CAMINHO COMPLETO DO LOCAL ONDE SERÃO ARMAZENADOS OS ARQUIVOS *.LDF optional reopen=300' scope=spfile;
+
+
+====================================================================================================
+SCRIPTS MENU RP1 - Verificar Lock no banco
+===================================================================================================
+set lines 1000
+set pages 1000
+col sql_id for a20
+col username for a10
+col username for a10
+col status for a10
+col osuser for a10
+col program for a20
+col event for a30
+col machine for a20
+col sid for a10
+SELECT inst_id,sid,serial#,username, sql_id,event,status,trunc(last_call_et/60)Tempo,blocking_session SID_BLOQUEADOR,machine
+FROM gv$session
+WHERE username is not null
+and username not in ('DBSNMP','SYSMAN')
+and status = 'ACTIVE'
+and blocking_session is not null
+and SECONDS_IN_WAIT > 60
+order by last_call_et;
+
+====================================================================================================
+SCRIPTS MENU RP1 - Verificar sessões ativas
+===================================================================================================
+SET LINES 500 TRIMS ON PAGESIZE 5000
+COL SPID                FOR A8
+COL "SID,SERIAL@INST"   FOR A18
+COL "BLK_SESS"          FOR A8
+COL USERNAME            FOR A20
+COL SQL_ID              FOR A14
+COL EVENT               FOR A38
+COL STATUS              FOR A10
+COL "LCALL/SIW"         FOR A16
+COL WAIT_CLASS          FOR A14
+SELECT
+                P.SPID,
+                '''' || S.SID  || ',' || S.SERIAL# || ',@' || S.INST_ID ||'''' "SID,SERIAL@INST",
+                S.BLOCKING_SESSION || '-' || S.BLOCKING_INSTANCE AS "BLK_SESS",
+                S.USERNAME || '/' || S.CLIENT_IDENTIFIER AS "USERNAME",
+                S.SQL_ID,
+                S.EVENT,
+                S.STATUS,
+                S.LAST_CALL_ET || '/' || S.SECONDS_IN_WAIT AS "LCALL/SIW"
+         FROM   GV$SESSION S, GV$PROCESS P
+        WHERE   P.ADDR = S.PADDR
+	 --	  AND   SQL_ID = '147mku2hkbqzp'
+          AND   S.INST_ID = P.INST_ID
+          AND   S.USERNAME NOT IN ('SYS','SYSMAN','DBSNMP')
+        AND   S.STATUS='ACTIVE'
+ ORDER BY S.LAST_CALL_ET DESC
+/
+
+
+-- ALTER SYSTEM KILL SESSION '4203,20576' IMMEDIATE;
+-- ALTER SYSTEM KILL SESSION '2241,55305' IMMEDIATE;
+4203,20576
+====================================================================================================
+SCRIPTS MENU RP1 - VERIFICAR DG
+===================================================================================================
+
+set line 1000
+set pages 1000
+select name, total_mb, free_mb from gv$asm_diskgroup;
+
+set line 1000
+set pages 1000
+select name, total_mb, free_mb from gv$asm_diskgroup where name = 'DATA_DW10';
+
+
+====================================================================================================================
+VALIDAR TEMPO DA QUERY NA LONG OPS.
+====================================================================================================================
+set lines 500 trims on
+set pagesize 5000
+COL SERIAL for a7
+col OPNAME for a20
+col USERNAME for a10
+SELECT inst_id,sid, serial#, opname, username,start_time,last_update_time,
+round(time_remaining/60,2) "REMAIN MINS", round(elapsed_seconds/60,2) "ELAPSED MINS", round((time_remaining+elapsed_seconds)/60,2) "TOTAL MINS", 
+ROUND(SOFAR/TOTALWORK*100,2) "%_COMPLETE", message
+FROM gv$session_longops 
+WHERE TOTALWORK != 0 AND sofar<>totalwork AND time_remaining > 0;
+
+====================================================================================================
+SCRIPTS MENU RP1 - Monitor Sessões Longas
+===================================================================================================
+set pages 2000
+SET LINESIZE 150
+COL USERNAME FORMAT A15;
+COL MACHINE FORMAT A15;
+COL OPNAME FORMAT A20;
+col message for a40;
+col sid for a15
+SELECT b.inst_id,B.USERNAME, A.SID, A.SERIAL#, b.sql_id,A.OPNAME, a.MESSAGE,ROUND(SOFAR/TOTALWORK*100,2) "%_COMPLETE"
+FROM gV$SESSION_LONGOPS A, gV$SESSION B
+WHERE (A.SID = B.SID AND A.SERIAL# = B.SERIAL#)
+AND TOTALWORK != 0
+AND SOFAR <> TOTALWORK
+order by 8;
+
+====================================================================================================
+Verifica informação das sessões.
+===================================================================================================
+
+set line 1000
+set pages 1000
+col ouser for a15
+col lockwait for a8
+col tabela for a20
+col username for a10
+col sid_serial# for a10
+col logon_time for a14
+col status_lock for a15
+col Terminal for a15
+col acao for a10 
+col prog for a15
+SELECT substr(to_char(c.LOCKWAIT),1,8) lockwait
+,substr(to_char(b.session_id)||','||to_char(c.serial#),1,12) sid_serial#
+  ,c.status
+  ,rpad(c.osuser,8) ouser
+  ,rpad(c.username,8) username
+  ,to_char(c.logon_time,'dd/mm hh24:mi:ss') logon_timeexit
+  ,a.object_name Tabela
+  ,decode(b.locked_mode,1,'No Lock',
+    2,'Row Share',
+    3,'Row Exclusive',
+    4,'Share',
+    5,'Share Row Excl',
+    6,'Exclusive',NULL) Status_Lock
+  ,rpad(c.module,15) Prog
+  ,c.terminal terminal
+  ,rpad(c.action,20) acao
+FROM all_objects a
+  ,gv$locked_object b
+  ,gv$session c
+WHERE b.object_id = a.object_id
+  AND b.session_id = c.sid 
+ORDER BY 6, 7 DESC;
+
+
+
+====================================================================================================
+Verifica informação das sessões para análise de SQL ID RENNER (PELA HORA)
+===================================================================================================
+alter session set nls_date_format = 'DD-MON-YYYY HH24:MI:SS';
+set lines 250
+set pagesize 1000
+col INST_ID for 99
+col USERNAME for a15
+col sid for a15
+col status for a10
+col MACHINE for a10      
+col LOGON_TIME for a30
+col OSUSER for a10
+col TERMINAL for a15
+col PROGRAM for a30
+select INST_ID,status ,logon_time,machine,SQL_ID,username, SID||','||serial# as sid,seconds_in_wait, last_call_et
+--,program,event
+--,terminal,osuser, program
+from gv$session WHERE
+--username ='ZABBIXD' and
+status = 'ACTIVE'
+--where  username like '%ODI_TMP%'
+--username like '%ZABBIXD%'
+--and sql_id ='bxqbkak1wsm2a' 
+--and machine like 'BT3%'
+--and sid = '2054'
+--and  program like '%sql%'
+order by 3
+/
+ 
+
+
+====================================================================================================================
+VERIFICA INFORMAÇÕES TABELAS ORACLE
+====================================================================================================================
+
+--Para listar todas as tabelas:
+SELECT * FROM dba_tables
+where table_name = 'SNP_LOC_REPW';
+
+--Para listar todas as tabelas do usuário corrente:
+SELECT tablespace_name, table_name, owner FROM user_tables where table_name = 'HSX_DSN_DETAILS';
+
+--Para listar todas as tabelas às quais o usuário tem acesso (sendo ele o owner (dono) ou não):
+SELECT tablespace_name, table_name, owner FROM all_tables;
+
+
+
+
+
+====================================================================================================================
+VERIFICAR TAMANHO DE UM INDICE / SEGMENTO 
+====================================================================================================================
+set pagesize 5555
+column dummy noprint
+col OWNER format a15
+col SEGMENT_NAME format a15
+col TABLESPACE_NAME format a15
+SELECT OWNER,SEGMENT_NAME,SEGMENT_TYPE,TABLESPACE_NAME,BYTES/1024/1024/1024 FROM DBA_SEGMENTS WHERE SEGMENT_NAME = 'PK_W_RTL_INVTSF_IT_LC_DY_F'  order by 2;
+====================================================================================================================
+
+
+
+====================================================================================================================
+VERIFICAR QUAL QUERY/TEXT O SQLID ESTA EXECUTANDO
+====================================================================================================================
+set pagesize 5555
+column dummy noprint
+col SQL_FULLTEXT for a5000
+
+select sql_fulltext from gv$sql where sql_id = 'ghhayvmbng97u';
+
+
+
+
+
+===================================================================================
+      Para ver o plano de execução:
+===================================================================================
+
+select * from table(dbms_xplan.display_cursor('4gsjtq9080ub7')); 
+
+1388734953
+
+===================================================================================
+	  Número de sessões por usuário:
+===================================================================================
+--GERAL:
+select distinct username, count(username) from v$session group by username;
+
+--POR INSTÂNCIA:
+set pages 100
+set col 200
+col machine for a40
+select count(1), inst_id, username, status, machine from gv$session
+where username is not null
+group by inst_id, username, status, machine
+order by 2,4;
+
+===================================================================================
+	  Número de sessões por NÓ do cluster
+===================================================================================
+select inst_id,status,count(1) from gv$session group by inst_id,status order by 1,2 ;
+
+===================================================================================
+	--Matar Sessões por USUÁRIO
+===================================================================================
+
+(1º Solução matar as sessões que executam do job com o USERNAME ADMRMS), com mde 24hrs. 
+
+select
+'alter system kill session ''' || S.SID  || ',' || S.SERIAL# || ',@' || S.INST_ID ||''' immediate;'
+FROM gv$session s
+WHERE S.USERNAME in ('RECUPERA')
+AND STATUS = 'INACTIVE'
+and S.logon_time < (sysdate -3/24) AND STATUS = 'INACTIVE';
+
+
+(2º Solução matar todas as sessões inativas que executam do job com o USERNAME ADMRMS de 24hrs)
+select
+'alter system kill session ''' || S.SID  || ',' || S.SERIAL# || ',@' || S.INST_ID ||''' immediate;'
+FROM gv$session s
+WHERE S.USERNAME in ('USER_BMT')
+and S.logon_time < (sysdate -7) AND STATUS = 'ACTIVE';
+
+
+select
+'alter system kill session ''' || S.SID  || ',' || S.SERIAL# || ',@' || S.INST_ID ||''' immediate;'
+FROM gv$session s
+WHERE S.USERNAME in ('SQOOP')
+AND STATUS = 'ACTIVE';
+and S.logon_time < (sysdate -3/24) AND STATUS = 'ACTIVE';
+
+====================================================================================================================
+DESABILITAR TRACERT PELO SID / SERIAL NO ORACLE 
+====================================================================================================================
+
+--desabilitei o trace  (dentro do banco, comando pra ser executado no SQL>)
+     exec dbms_system.set_sql_trace_in_session(&sid,&serial,FALSE);
+-- deve pedir o sid ->Enter value for sid: 7836
+-- deve pedir o serial -> Enter value for serial: 59937
+PL/SQL procedure successfully completed.
+
+
+
+
+====================================================================================================================
+VERIFICAR QUAL A MÉDIA DE TEMPO DO SQLID NO BANCO / MEDIA DE TEMPO / LEITURA I.O. DO MESMO;
+====================================================================================================================
+set lines 1550 pages 30
+col execs for 999,999,999
+col avg_etime for 999,999.999
+col avg_lio for 999,999,999.9
+col begin_interval_time for a30
+col node for 99999
+break on plan_hash_value on startup_time skip 1
+select ss.snap_id, ss.instance_number node, begin_interval_time, sql_id, plan_hash_value,
+nvl(executions_delta,0) execs,
+(elapsed_time_delta/decode(nvl(executions_delta,0),0,1,executions_delta))/1000000 avg_etime,
+(buffer_gets_delta/decode(nvl(buffer_gets_delta,0),0,1,executions_delta)) avg_lio
+from DBA_HIST_SQLSTAT S, DBA_HIST_SNAPSHOT SS
+where sql_id = nvl('3m9bjtzcuu1v0','3m9bjtzcuu1v0')
+and ss.snap_id = S.snap_id
+and ss.instance_number = S.instance_number
+and executions_delta > 0
+order by 1, 2, 3
+/
+
+
+
+====================================================================================================================
+VALIDAR CONSUMO DOS ULTIMOS 30 DIAS DE UMA TABLESPACE
+====================================================================================================================
+
+set pagesize 5555
+col name format a15
+col PERCENT_USAGE format 999.99 heading "%|Used"
+col DATA heading "Dia"
+select * from HISTORICO_TBS where TO_DATE(SYSDATE,'DD/MM/YYYY') - TO_DATE(DATA,'DD/MM/YYYY') < 31 and name = 'WEBREP_D';
+====================================================================================================================
+
+====================================================================================================================
+VERIFICAR OS 15 MAIORES OBJETOS DE UM TABLESPACE
+====================================================================================================================
+
+set pagesize 50000
+col OWNER format  a15
+col SEGMENT_NAME format a25
+col TABLESPACE_NAME format a20
+col SEGMENT_TYPE for a15
+col BYTES/1024/1024 for 
+SELECT * FROM (SELECT OWNER, SEGMENT_NAME, SEGMENT_TYPE, BYTES/1024/1024
+FROM DBA_SEGMENTS 
+WHERE TABLESPACE_NAME='GRUPO_CONTRATO_PSU' 
+ORDER BY BYTES/1024/1024 DESC)
+WHERE ROWNUM <=15;
+
+
+====================================================================================================================
+VERIFICAR O CRESCIMENTO DE UMA TABELA DENTRO DA TABLESPACE NOS ULTIMOS 30 DIAS
+====================================================================================================================
+col OWNER format  a15
+col NAME format  a10
+col TYPE for a10
+SELECT * FROM sys.historico_obj WHERE  TO_DATE(SYSDATE,'DD/MM/YYYY') - TO_DATE(DATA,'DD/MM/YYYY') < 31 and NAME='GRUPO_CONTRATO_PSU' 
+order by DATA;
+
+
+
+
+--   ou
+
+
+
+col OWNER format  a15
+col NAME format  a10
+col TYPE for a10
+select * from HISTORICO_TBS where TO_DATE(SYSDATE,'DD/MM/YYYY') - TO_DATE(DATA,'DD/MM/YYYY') < 30 and name = 'GRUPO_CONTRATO_PSU';
+
+
+====================================================================================================================
+VERIFICAR QUAIS SESSÕES ESTÃO COM PARALELISMO BANCO
+====================================================================================================================
+
+
+select distinct qcsid as SID ,DEGREE as Parallel from gv$px_session where DEGREE is not null order by qcsid;
+
+====================================================================================================================
+VERIFICAR QUAL SESSÃO ESTA USANDO A TABELA
+====================================================================================================================
+--1 EM todas transações no momento
+
+set pagesize 500
+set lines 500 trims on
+COL SID_SERIAL for a10
+col ORA_USER for a15
+col OS_USER_NAME for a15
+COL STATUS for a8
+col OBJECT_NAME for a30
+col OBJECT_TYPE for a15
+col LOCK_MODE for a10
+COL STATUS for a8
+ S.INST_ID 
+SELECT l.session_id||','||v.serial# sid_serial,
+ l.ORACLE_USERNAME ora_user,
+ l.OS_USER_NAME,
+ o.object_name, 
+ o.object_type, 
+ DECODE(l.locked_mode,
+ 0, 'None',
+ 1, 'Null',
+ 2, 'Row-S (SS)',
+ 3, 'Row-X (SX)',
+ 4, 'Share',
+ 5, 'S/Row-X (SSX)',
+ 6, 'Exclusive', 
+ TO_CHAR(l.locked_mode)
+ ) lock_mode,
+ o.status,  
+ to_char(o.last_ddl_time,'dd.mm.yy') last_ddl
+FROM dba_objects o, gv$locked_object l, gv$session v
+WHERE o.object_id = l.object_id
+ and l.SESSION_ID=v.sid
+order by 2,3;
+
+--2 Em uma tabela especifica gerando comando de kill
+select 'alter system kill session '''||a.sid||','||a.serial#||''' immediate;'
+from v$session a, v$locked_object b, dba_objects c
+where b.object_id = c.object_id
+and a.sid = b.session_id
+and OBJECT_NAME=upper('&TABLE_NAME');
+
+====================================================================================================================
+VERIFICAR OWNER/TAMANHO DE UMA TABELA NO BANCO ORACLE.
+====================================================================================================================
+
+
+set line 1000
+set pages 1000
+col owner for a20 
+col table_name for a30 
+select owner, table_name, round((num_rows*avg_row_len)/(1024*1024)) MB 
+from all_tables 
+where table_name =  'VBAP';
+
+
+====================================================================================================================
+VERIFICAR QUANTIDADE DE REGISTROS DE UMA TABELA NO BANCO ORACLE.
+====================================================================================================================
+-- (dono da tabela.NomedaTabela)
+
+select count(*) from ODI_TMP.I$_HAA2KPEJIR37LVICB798Q8H38AH;
+
+====================================================================================================================
+--VERIFICAR ESTATISTICA DA TABELA RODANDO POR SQLID (bom para ver as tabelas do SQLID)
+==================================================================================================
+
+select OWNER,TABLE_NAME,LAST_ANALYZED,STALE_STATS from DBA_TAB_STATISTICS where STALE_STATS='YES' and OWNER='&owner'; 
+
+set lines 300 set pages 300
+col table_name for a40
+col owner for a30
+select distinct owner, table_name, STALE_STATS, last_analyzed, stattype_locked
+from dba_tab_statistics
+where (owner, table_name) in
+(select distinct owner, table_name
+from dba_tables
+where ( table_name)
+in ( select object_name
+from gv$sql_plan
+where upper(sql_id) = upper('&sql_id') and object_name is not null))
+--and STALE_STATS='YES'
+/
+
+
+66hhs7mahsa26
+====================================================================================================================
+VERIFICAR AS ESTATISTICAS DE UMA TABELA
+====================================================================================================================
+
+set lines 300 set pages 300
+col Schema for a30
+col Objeto for a30
+col "Ultima Coleta" for a30
+col stale_stats for a10
+SELECT
+   S.Owner As "Schema"
+  ,S.Table_Name As "Objeto"
+  ,S.Object_Type As "Tipo do Objeto"
+  ,S.Num_Rows As "Qtd. de Linhas"
+  ,stale_stats 
+  ,To_Char(S.Last_Analyzed, 'yyyy-MM-dd HH24:mm:ss') As "Ultima Coleta"
+FROM
+  sys.dba_tab_statistics S
+WHERE
+   S.Table_Name like '%SNP_LOC_REPW%'---<Tabela
+ORDER BY
+  S.Last_Analyzed ASC;
+
+
+
+======================================================================================================================
+VERIFICAR A ULTIMA ESTATISTICA DE UMA TABELA ORACLE pelo analyzed	
+======================================================================================================================
+select last_analyzed, num_rows from dba_tables where table_name = 'J$_T411TOPE';  
+  
+======================================================================================================================
+VERIFICAR A COLETA DE ESTATISTICAS DOS INDEXS ORACLE
+======================================================================================================================
+--Coletar as informações da tabela com a query abaixo: Pegar o Owner da Tabela), o last analyzed é a ultima coleta de estatistica da tabela                                                                                                                                                                                                                                                             
+col OWNER for a20
+col INDEX_NAME for a20
+col INDEX_TYPE for a20
+col TABLE_OWNER for a20
+col TABLE_NAME for a20
+select OWNER, INDEX_NAME, INDEX_TYPE, TABLE_OWNER, TABLE_NAME, NUM_ROWS, STATUS, LAST_ANALYZED
+from dba_indexes where TABLE_NAME = 'NB_RCPO_MGIN_IT_WK_SUPP_TMP_RE';
+
+======================================================================================================================
+REBUILD INDEX ORACLE
+======================================================================================================================
+-- ALTER INDEX RADM01.PK_W_RTL_INVTSF_IT_LC_DY_F rebuild online parallel 12 nologging;
+-- alter index my_idx rebuild online parallel 63 nologging;
+-- SELECT COUNT(*) FROM ODI_TMP.I$_RABV7H2TKELRKJ1E06TTG4TPCFJ;
+
+
+======================================================================================================================
+EXECUTAR A COLETA DE ESTATISTICAS ORACLE
+======================================================================================================================
+
+-- Com paralelimos de 10
+execute dbms_stats.gather_table_stats('PPFHT_ODS', 'HTC_PRODUTO_FINANCEIRO', DBMS_STATS.AUTO_SAMPLE_SIZE, 'FOR ALL COLUMNS SIZE AUTO',degree=> 10);
+		
+-- Com paralelimos de 10  , opção B 
+
+execute dbms_stats.gather_table_stats(ownname => upper('RABE01USER'),tabname => upper('NB_RCPO_MGIN_IT_WK_SUPP_TMP_RE'),estimate_percent => DBMS_STATS.AUTO_SAMPLE_SIZE,degree => 30,method_opt => 'FOR ALL COLUMNS SIZE AUTO',no_invalidate => false);
+
+
+EXEC DBMS_STATS.GATHER_TABLE_STATS(OWNNAME=>'ADMRMS', TABNAME=>'W_RTL_SLS_TRX_IT_LC_DY_F', cascade=>true);
+
+
+
+--SCHEMA = OWNER
+
+EXEC DBMS_STATS.GATHER_TABLE_STATS('RADM01','W_RTL_SLS_TRX_IT_LC_DY_F');
+
+exec dbms_stats.gather_table_stats(ownname=>'RADM01', tabname=>'W_RTL_SLS_TRX_IT_LC_DY_F', estimate_percent => 100, cascade=>FALSE);
+
+set linesize 250
+select owner, index_name, index_type, table_name
+from dba_indexes
+where owner = 'ODI_TMP'
+and table_name = 'J$_T411TOPE';
+
+--DROP INDEX ADMRMS.PK_RPL_DISTRO_TMP;
+====================================================================================================================
+VERIFICAR AS ESTATISTICAS DE UMA TABELA
+====================================================================================================================
+-- POR NOME DA TABELA
+set lines 300 set pages 300
+col Schema for a30
+col Objeto for a30
+col "Ultima Coleta" for a30
+SELECT
+   S.Owner As "Schema"
+  ,S.Table_Name As "Objeto"
+  ,S.Object_Type As "Tipo do Objeto"
+  ,S.Num_Rows As "Qtd. de Linhas"
+  ,To_Char(S.Last_Analyzed, 'yyyy-MM-dd HH24:mm:ss') As "Ultima Coleta"
+FROM
+  sys.dba_tab_statistics S
+WHERE
+  S.Owner Not In('SYS', 'SYSTEM', 'SYSMAN', 'DBSNMP')
+  and S.Table_Name = 'I$_TAF619RNHNU317J5R75ROSE6PGG'
+ORDER BY
+  S.Last_Analyzed ASC;
+  
+  
+  
+col OWNER for a20
+col TABLE_NAME for a25
+col Last_Analyzed for a20
+select t.owner, t.table_name, t.last_analyzed from all_all_tables t where t.table_name = 'dcspp_order' , 'DCSPP_ORDER' ;
+
+-- POR OWNER
+
+select t.owner, t.table_name, t.last_analyzed from all_all_tables t where t.owner like ('%oc_production%');
+
+====================================================================================================================
+VERIFICAR AS chaves primárias / secundárias / fk- pk constraINTS da (TABELA) 
+====================================================================================================================
+
+
+col OWNER for a10
+col CONSTRAINT_NAME for a15
+col POSITION for a5
+col SEARCH_CONDITION_VC for a10
+col R_OWNER for a10
+col R_CONSTRAINT_NAME for a20
+col TABLE_NAME for a20
+col COLUMN_NAME for a20
+col SEARCH_CONDITION for a10
+col INDEX_OWNER for a10
+col INDEX_NAME for a10
+SELECT * FROM ALL_CONS_COLUMNS A JOIN ALL_CONSTRAINTS C  ON A.CONSTRAINT_NAME = 
+C.CONSTRAINT_NAME WHERE C.TABLE_NAME = 'NOME DA TABELA' AND C.CONSTRAINT_TYPE = 'R';
+
+--TIPO DE CONSTRAINTS Segue log de execução abaixo: item_loc_soh
+
+C = Check
+P = Primary Key
+R = Foreign Key
+U = Unique Key
+O = READ ONLY em uma VIEW
+V = Check em uma VIEW
+--TIPOS DE CONSTRAINTS
+====================================================================================================================
+VERIFICAR SESSÕES EM ROLLBACK (TABELA) 
+====================================================================================================================
+
+set lines 500 trims on
+set pagesize 5000  
+col ROLling_Back for a15
+col PROGRAM FOR a20
+ select t.INST_ID
+, s.sid
+, s.program
+ , t.status as transaction_status
+, s.status as session_status
+, s.lockwait
+, s.pq_status
+, t.used_ublk as undo_blocks_used
+, decode(bitand(t.flag, 128), 0, 'NO', 'YES') rolling_back
+from
+gv$session s
+, gv$transaction t
+where s.taddr = t.addr
+and s.inst_id = t.inst_id
+--and s.STATUS = 'KILLED'
+order by t.inst_id;
+
+
+ SELECT sw.INST_ID, SW.SID, SW.SEQ#, SW.EVENT, SW.STATE, sw.WAIT_TIME
+  FROM gv$session_wait sw
+  WHERE sw.sid IN (SELECT sid FROM gv$session s WHERE s.status = 'KILLED' AND s.inst_id = sw.INST_ID)
+ ORDER BY sw.inst_id;
+
+select 'kill -9 '||vp.spid
+FROM v$process vp, V$SESSION vs
+where vp.addr = vs.paddr
+and vp.addr = vs.paddr
+and status='KILLED';
+
+
+====================================================================================================================
+VERIFICAR/FORÇAR ROLLBACK TRANSAÇÕES PARADAS NA dba_2pc_pending (TABELA) 
+====================================================================================================================
+https://www.sqleo.com.br/2016/12/solucionando-o-erro-ora-01591-lock-held-by-in-doubt-distributed-transaction/
+
+--VERIFICAR TRANSAÇÕES PARADAS
+col LOCAL_TRAN_ID for a20
+col GLOBAL_TRAN_ID for a35 
+col  'EXECUTEDBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('||''''||LOCAL_TRAN_ID||''''||');' for a50
+SELECT LOCAL_TRAN_ID, GLOBAL_TRAN_ID,STATE,
+'EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('||''''||LOCAL_TRAN_ID||''''||');'||chr(13)||'COMMIT;'
+FROM DBA_2PC_PENDING
+ORDER BY 1 ASC;
+
+-- Exemplo de retorno da busca
+LOCAL_TRAN_ID        GLOBAL_TRAN_ID                    STATE      
+52.2.2071316	     48801.677EFB5759FC36191720       COMMIT
+
+--Forçar o commit da transação
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('184.32.6916712');
+commit;
+
+
+COMMIT;
+--Forçar o Rollback caso necessário: 
+ROLLBACK FORCE '@52.2.2071316';
+EXECUTE DBMS_TRANSACTION.PURGE_LOST_DB_ENTRY('52.2.2071316');
+COMMIT;
+
+SELECT KTUXEUSN, KTUXESLT, KTUXESQN, KTUXESTA Status, KTUXECFL Flags FROM x$ktuxe WHERE ktuxesta!='INACTIVE';
+SELECT a.KTUXEUSN + '.' + a.KTUXESLT + '.' + a.KTUXESQN as "transação", a.* FROM x$ktuxe a WHERE a.ktuxesta ='INACTIVE';
+SELECT a.KTUXEUSN + '.' + a.KTUXESLT + '.' + a.KTUXESQN as "transação", a.* FROM x$ktuxe a WHERE a.ktuxesta <> 'INACTIVE';
+
+====================================================================================================================
+VERIFICAR TRIGGERS DO BANCO
+====================================================================================================================
+--VERIFICAR TEXTO DA TRIGGER (alterar o nome)
+
+select text
+from all_source
+--where owner = 'GEMCOPD'
+where name = 'PEGA_ACESSO';
+
+--VERIFICAR TRIGGERS HABILITADAS 
+set pagesize 5555
+col trigger_name for a30
+col table_owner for a30
+col table_name for a30
+SELECT trigger_name,
+       table_owner,
+       table_name,
+       status
+FROM   all_triggers
+WHERE  status = 'ENABLED';
+
+
+--VERIFICAR TRIGGERS DESABILITADAS 
+col trigger_name for a30
+col table_owner for a30
+col table_name for a30
+SELECT trigger_name,
+       table_owner,
+       table_name,
+       status
+FROM   all_triggers
+WHERE  status = 'DISABLED';
+
+
+-- HABILITAR / DESABILITAR  TRIGGER
+
+alter trigger system.pega_acesso disable;
+
+alter trigger system.pega_acesso enable;
+
+
+--VERIFICAR ERRO DA TRIGGER
+
+SHOW ERRORS TRIGGER PEGA_ACESSO;
+
+select *
+from
+   user_errors
+where
+   type = 'TRIGGER'
+and
+   name = 'PEGA_ACESSO';
+
+
+====================================================================================================================
+VERIFICAR OBJETOS DEGREE  (RENNER)
+====================================================================================================================
+select 'alter index '||owner||'.'||index_name||' noparallel;' from dba_indexes where degree > '1' and degree <> 'DEFAULT';
+
+
+
+show parameter spfile; 
+
+show parameter sga_target; 
+
+show parameter shared_pool_size; 
+
+alter session set nls_date_format='dd/mm/yy hh24:mi';
+set pages 1000 lines 200
+select instance_name,status,startup_time,host_name,logins from gv$instance;
+select sysdate from dual;
+ 
+Select * from gv$restore_point;
+
+====================================================================================================================
+BACKUP POR FLASHBACK / CRIAR / RESTAURAR FLASHBACK
+====================================================================================================================
+-- SITE PARA CONSULTA  http://rodrigo-oracle.blogspot.com/2010/06/trabalhando-com-restore-points-em-um.html
+
+-- Verifficar se o FLASHBACK esta habilitado no banco de dados. Necessário estar dentro do banco linha de comando SQL>
+select name,flashback_on from v$database;
+
+--Configurar a Fast Recovery Area: APENAS FAZER ESTE PASSO SE NÃO TIVER NADA CONFIGURADO, SENÃO ELE ASSUME O LOCAL ATUAL DE BACKUP do db_recovery_file_dest
+alter system set db_recovery_file_dest = '/u03/app/oracle/fast_recovery_area' scope=both; 
+ 
+--Configurar a retenção dos Flashback Logs o padrão normal é 1440 - 1dia , 4320 é 3 dias(é medido em minutos)
+alter system set db_flashback_retention_target = 4320 scope=both;
+
+-- Caso o FLASHBACK não estiver habilitado, obs: BANCO TEM Q ESTAR COM ARCHIVELOG , se estiver em NOARCHIVELOG não funciona:
+alter database flashback on;
+
+--Criando um ponto de restauração do flashback
+create restore point NOMEPONTORESTAURACAO guarantee flashback database;
+
+--A view v$restore_point pode ser usada para consultar informações sobre restore points. No exemplo abaixo um simples select nessa view:
+col Name for a20
+select name, scn, storage_size, guarantee_flashback_database as Guar from gv$restore_point;
+
+--RESTAURANDO O BANCO PARA O RESTORE POINT ARMAZENADO NO EXEMPLO: NOMEPONTORESTAURACAO, banco tem q ser baixado e iniciado com startup mount;
+shutdown immediate;
+Startup Mount;
+flashback database to restore point NOMEPONTORESTAURACAO;
+
+--Após o comando de restaure do flashback é NECESSÁRIO ABRIR O BANCO NA OPÇÃO DE OPEN RESETSLOGS: 
+alter database open resetlogs; 
+
+--DROPAR / DELETAR o RESTORE POINT CRIADO
+DROP restore point NOMEPONTORESTAURACAO;
+
+
+--FIM , após estes passos o restore é finalizado e o banco aberto 
+
+
+--Caso seja necessário colocar o banco em archivelog nos passos abaixo: 
+--lista as informações dos backups / archives
+archive log list;
+
+--Necessário baixar o banco primeiro e depois subir no estado "mount"
+shutdown immediate;
+Startup Mount;
+
+--ALterar o banco para archivelog, e depois abrir o banco 
+alter database archivelog;
+alter database open;
+
+
+====================================================================================================================
+BACKUP ORACLE EXPDP (GERAR DUMP) 
+====================================================================================================================
+
+-- https://www.fabioprado.net/2012/09/data-pump-mais-rapido-com-paralelismo.html CONSULTA
+
+1 -> Criar o diretório no S.O. (ex: linux dentro do u01, pode ser criado em qualquer lugar, neste exemplo pasta backupfull) 
+
+cd /u01
+mkdir backupfull 
+ls -ltr (e verificar se criou a pasta backupfull, cd /u01/backupfull)
+
+
+2 -> Acessar o banco com usuário sys :  sqlplus / as sysdba , e criar um objeto de diretório para o banco poder acessar, não é criado nada a nível de S.O. apenas um diretório de objeto para o banco, no exemplo NOMEDOBANCO_FULL:
+CREATE DIRECTORY NOMEDOBANCO_FULL as '/u01/backupfull';
+
+--SE FOR REALIZAR COM OUTRO USUÁRIO O BACKUP, QUE NÃO SEJA O SYS, SEGUIR OS PASSOS 3 E 4, SE FOR EXECUTAR COM O SYS , trocar o usuário TESTE por sys
+
+3 -> (Caso necessário, podemos dar permissão no diretório de objeto (NOMEDOBANCO) para algum usuário específico do banco, neste exemplo user: TESTE)
+GRANT read, write ON DIRECTORY NOMEDOBANCO_FULL to TESTE; 
+
+
+4 -> Dando permissão para o usuário TESTE realizar o export no banco (A role DATAPUMP_EXP_FULL_DATABASE habilita a permissão do EXPDP): 
+GRANT DATAPUMP_EXP_FULL_DATABASE TO TESTE; 
+
+
+--CRIAR COM O USUÁRIO TESTE É PASSO 5
+5 -> Após os passos acima sair do SQLPLUS do banco e voltar para pasta criada "cd /u01/backupfull" , rodar o comando, para criar o arquivo "NOMEDOBANCO_01/02/21dmp" : 
+-- expdp comando para exportar     TESTE/TESTE@SIDDOBANCO usuário/senha@SIDDOBANCO    directory=NOMEDOBANCO_FULL obejto de diretório criado   dumpfile=NOMEDOBANCO_01/02/21.dmp  Arquivo dump a ser criado     logfile=NOMEBANCO_FULL_LOG.log -> Arquivo de log gerado pra acompanhar       FULL=YES;   -> Tipo do backup a ser executado.        
+expdp TESTE/TESTE@SIDDOBANCO directory=NOMEDOBANCO_FULL dumpfile=NOMEDOBANCO_01/02/21.dmp logfile=NOMEBANCO_FULL_LOG.log FULL=YES;
+
+
+--CRIAR COM O SYS É O PASSO 6
+6 -> Após os passos acima sair do SQLPLUS do banco e voltar para pasta criada "cd /u01/backupfull" , rodar o comando, para criar o arquivo "NOMEDOBANCO_01/02/21dmp" : 
+
+-- expdp comando para exportar     "/ as sysdba \" usuário sys     directory=NOMEDOBANCO_FULL objeto de diretório criado   dumpfile=NOMEDOBANCO_01/02/21.dmp  Arquivo dump a ser criado     logfile=NOMEBANCO_FULL_LOG.log -> Arquivo de log gerado pra acompanhar       FULL=YES;   -> Tipo do backup a ser executado.        
+expdp \"/ as sysdba \ " directory=NOMEDOBANCO_FULL dumpfile=NOMEDOBANCO_01/02/21.dmp logfile=NOMEBANCO_FULL_LOG.log FULL=YES;
+
+--PARA GERAR COM PARALELISMO DE 2 E GERAR EM 2 ARQUIVOS "QUEBRADOS" PARA SER MAIS RÁPIDA A EXECUÇÃO.
+expdp \"/ as sysdba \ " full=y directory=NOMEDOBANCO_FULL parallel=2 dumpfile=NOMEDOBANCO_01/02/21_%U.dmp logfile=  logfile=NOMEBANCO_FULL_LOG.log
+
+
+
+exec sys.dbms_system.set_sql_trace_in_session(8,121,true);
+
+====================================================================================================================
+VERIFICAR BACKUPS ANDAMENTO
+====================================================================================================================
+
+
+set lines 300
+col STATUS format a22
+col hrs format 999.99
+select
+SESSION_KEY, SESSION_RECID, SESSION_STAMP,INPUT_TYPE, STATUS,
+to_char(START_TIME,'mm/dd/yy hh24:mi') start_time,
+to_char(END_TIME,'mm/dd/yy hh24:mi')   end_time,
+elapsed_seconds/3600                   hrs
+from GV$RMAN_BACKUP_JOB_DETAILS
+order by session_key;
+
+
+
+====================================================================================================================
+GERAR ARQUIVO TRACERT
+====================================================================================================================
+
+--1-> Verificar qual a sid / serial , que deseja gerar o tracert , alterar o SQLID para ver.
+
+alter session set nls_date_format = 'DD-MON-YYYY HH24:MI:SS';
+set lines 300
+set pagesize 1000
+col INST_ID for 99
+col USERNAME for a15
+col "SID,SERIAL@INST"   for a18
+COL seria
+col status for a10
+col MACHINE for a10      
+col LOGON_TIME for a30
+col OSUSER for a10
+col TERMINAL for a15
+col PROGRAM for a30
+select INST_ID,status ,logon_time,machine,SQL_ID,username, '''' || sid  || ',' || serial# || ',@' || inst_id ||'''' "SID,SERIAL@INST" ,seconds_in_wait, last_call_et
+--,program,event
+--,terminal,osuser, program
+from gv$session WHERE 
+    --username ='SYS' and
+    --status = 'ACTIVE' 
+  -- username like '%MICROSTRATEGY%'
+    --username like '%937752%'
+    sql_id ='c7gxpjhvhya7p' 
+    --  machine like '%BT%'
+   --sid = '863'
+--and  program like '%sql%'
+order by 3
+/
+
+
+-- 2->  Habilitar o tracert para a sid / sessao
+
+exec sys.dbms_system.set_sql_trace_in_session(8,121,true);
+
+
+-- 3-> Para desabilitar o “trace” da sessão deve-se executar o comando
+
+exec sys.dbms_system.set_sql_trace_in_session(8,121,false);
+
+
+-- 4 -> Para verificar o local do arquivo de “dump” gerado durante o processo de trace, pode-se executar a query abaixo: 
+ select value
+ from v$parameter
+ where name='user_dump_dest';
+ 
+ 
+-- 5 ->  Para identificar qual  o nome do arquivo que possui o trace da sessão, execute o seguinte comando:
+-- executar o grap na pasta que foi gerado o tracert do resultado acima.
+grep  8.121  *
+
+
+-- 6 ->   Para ver os planos de execução do arquivo de trace execute.
+-- executar no linux, na pasta que foi gerado o tracert.
+
+SELECT sysdate,a.username, a.sid, a.serial#, a.osuser, b.blocks, c.sql_text
+FROM v$session a, v$sort_usage b, v$sqlarea c
+WHERE b.tablespace = 'TEMP'
+and a.saddr = b.session_addr
+AND c.address= a.sql_address
+AND c.hash_value = a.sql_hash_value
+AND b.blocks* 8192 > 10000
+ORDER BY b.tablespace, b.blocks;
+
+
+====================================================================================================================
+--Criar Job pelo DMBS SCHEDULER - ORACLE
+====================================================================================================================
+
+1 -> Criar pelo próprio owner no SQLDEVELOPER
+
+Acessar o Banco 
+abrir a aba outros usuários e achar o owner
+abrir a aba Programador 
+Abrir a aba JOBS (Botão direito novo JOB assistente) 
+Seguir com o assistente preenchendo com os dados
+
+
+2 ->  Criando diretamente no oracle com o DBMS_SCHEDULER
+
+--Alterar as informações necessárias:
+--job_name => '"DBCSI_P2K".""',         ------** OWNER DO JOB
+-- job_type => 'PLSQL_BLOCK',           ------** TIPO DA EXECUÇÃO
+-- job_action => 'EXEC PKG_GERA_NOTA_FALTANTE.SP_BUSCA_NOTA_PULO_NFE(20220225); ',  --**Comando que vai ser executado
+-- number_of_arguments => 0,          -----* ?
+-- start_date => TO_TIMESTAMP_TZ('2022-03-30 05:00:00.000000000 AMERICA/SAO_PAULO','YYYY-MM-DD HH24:MI:SS.FF TZR'),        -------** HORÁRIO / TEMPO DE EXECUÇÃO DO JOB
+-- repeat_interval => 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI,SAT,SUN',  -------** HORÁRIO intervalo dos dias 
+-- end_date => NULL,      -----** Data pra terminar o schedule
+-- enabled => FALSE,      -----** Data 
+-- auto_drop => FALSE,
+-- comments => 'CHG0052229');  ------* Comentário do job
+
+
+BEGIN
+    DBMS_SCHEDULER.CREATE_JOB (
+            job_name => '"DBCSI_P2K".""',
+            job_type => 'PLSQL_BLOCK',
+            job_action => 'EXEC PKG_GERA_NOTA_FALTANTE.SP_BUSCA_NOTA_PULO_NFE(20220225); ',
+            number_of_arguments => 0,
+            start_date => TO_TIMESTAMP_TZ('2022-03-30 05:00:00.000000000 AMERICA/SAO_PAULO','YYYY-MM-DD HH24:MI:SS.FF TZR'),
+            repeat_interval => 'FREQ=DAILY;BYDAY=MON,TUE,WED,THU,FRI,SAT,SUN',
+            end_date => NULL,
+            enabled => FALSE,
+            auto_drop => FALSE,
+            comments => 'CHG0052229');
+
+         
+     
+ 
+-- Opcional/extras 
+    DBMS_SCHEDULER.SET_ATTRIBUTE( 
+             name => '"DBCSI_P2K".""', 
+             attribute => 'logging_level', value => DBMS_SCHEDULER.LOGGING_OFF);
+      
+  
+    
+    DBMS_SCHEDULER.enable(
+             name => '"DBCSI_P2K".""');
+END;
+
+
+
+====================================================================================================================
+--SHARED POOL / MEMORY ORACLE VERIFICAR / LIMPAR
+====================================================================================================================
+--1-> Rodar o script abaixo para verificar os dados de utilização da Shared Pool : (obs: mostra por um nó único, caso seja um cluster rodar em todos os nós).
+
+set serveroutput on;  
+   
+declare 
+        object_mem number;  
+        shared_sql number;  
+        cursor_mem number;  
+        mts_mem number;  
+        used_pool_size number;  
+        free_mem number;  
+        pool_size varchar2(512);  
+begin 
+select sum(sharable_mem) into object_mem from v$db_object_cache;  
+select sum(250*users_opening) into cursor_mem from v$sqlarea;  
+select sum(value) into mts_mem from v$sesstat s, v$statname n  
+       where s.statistic#=n.statistic#  
+       and n.name='session uga memory max';  
+select bytes into free_mem from v$sgastat  
+        where name = 'free memory' and pool='shared pool';  
+used_pool_size := round(1.3*(object_mem+cursor_mem));    
+select value into pool_size from v$parameter where name='shared_pool_size';    
+dbms_output.put_line ('Object mem:    '||to_char (object_mem) || ' bytes');  
+dbms_output.put_line ('Cursors:       '||to_char (cursor_mem) || ' bytes');  
+dbms_output.put_line ('MTS session:   '||to_char (mts_mem) || ' bytes');  
+dbms_output.put_line ('Free memory:   '||to_char (free_mem) || ' bytes ' ||  
+'('|| to_char(round(free_mem/1024/1024,2)) || 'MB)');  
+dbms_output.put_line ('Shared pool utilization (total):  '||  
+to_char(used_pool_size) || ' bytes ' || '(' ||  
+to_char(round(used_pool_size/1024/1024,2)) || 'MB)');  
+dbms_output.put_line ('Shared pool allocation (actual):  '|| pool_size 
+||' bytes ' || '(' || to_char(round(pool_size/1024/1024,2)) || 'MB)');  
+dbms_output.put_line ('Percentage Utilized:  '||to_char  
+(round(used_pool_size/pool_size*100)) || '%');  
+end;  
+/
+
+
+--2-> Rodar o script abaixo para verificar a quantidade de espaço livre em todas pools de memória oracle (se for um cluster tem q rodar em cada nó do mesmo)
+
+
+col mb_free for 999,999,999.999
+
+select initcap(pool) pool, bytes / 1024 / 1024 mb_free
+  from v$sgastat
+ where name = 'free memory';
+ 
+ 
+ --3-> Caso necessário pra limpar a Shared Pool: 
+ 
+alter system flush shared_pool;
+
+====================================================================================================================
+--VERIFICAR O CONSUMO DE I/O 
+====================================================================================================================
+
+--POR TABLESPACE
+
+set feedback off
+
+set lines 155
+break on report
+compute sum of WRITEPCT on report
+compute sum of READPCT on report
+compute sum of IOPCT on report
+
+select * from
+( SELECT TABLESPACE_NAME
+, sum(PHYRDS) as PHYRDS
+, sum(PHYWRTS) as PHYWRTS
+, sum(PHYBLKRD) as PHYBLKRD
+, sum(PHYBLKWRT) as PHYBLKWRT
+, sum(READPCT) as READPCT
+, sum(WRITEPCT) as WRITEPCT
+, sum(IOPCT) as IOPCT
+FROM
+( SELECT
+ts.name
+as tablespace_name
+, fs.PHYRDS
+, fs.PHYWRTS
+, fs.PHYBLKRD
+, fs.PHYBLKWRT
+, 100 * ratio_to_report(fs.PHYBLKRD) over () as readpct
+, 100 * ratio_to_report(fs.PHYBLKWRT) over () as writepct
+, 100 * ratio_to_report(fs.PHYBLKRD+fs.PHYBLKWRT) over () as iopct
+FROM gV$FILESTAT fs, gV$DATAFILE df, gv$tablespace ts, dba_tablespaces dt
+WHERE fs.file# = df.file#
+AND df.ts# = ts.ts#
+AND dt.tablespace_name = ts.name )
+GROUP BY tablespace_name
+ORDER BY iopct desc )
+where rownum < 11 ; 
+ 
+ 
+
+
+--POR SESSÃO NO BANCO 
+set lines 200
+col username for a20
+
+select nvl(ses.USERNAME,'ORACLE PROC') username,
+ OSUSER os_user,
+ PROCESS pid,
+ ses.SID sid,
+ SERIAL#,
+ PHYSICAL_READS,
+ BLOCK_GETS,
+ CONSISTENT_GETS,
+ BLOCK_CHANGES,
+ CONSISTENT_CHANGES
+from gv$session ses, 
+ gv$sess_io sio
+where  ses.SID = sio.SID
+order  by PHYSICAL_READS, ses.USERNAME;
+
+
+
+--POR SESSÃO NO BANCO -VALOR 2
+set lines 190
+col name for a30
+col module for a20
+col program for a30
+col username for a20
+
+select a.sid, b.name, a.value, c.module, c.program, c.username
+   from v$sesstat a, v$statname b, v$session c
+  where a.STATISTIC# = b.STATISTIC#
+    and b.STAT_ID in (1190468109, 2263124246)
+    and a.sid = c.sid
+    and type <> 'BACKGROUND'
+  order by a.value;
+
+
+====================================================================================================================
+--VALIDAR AREA ARCHIVE - REDO
+====================================================================================================================
+
+alter session set nls_date_format='dd/mm/yy hh24:mi';
+set pages 1000 lines 200
+select instance_name,status,startup_time,host_name,logins from gv$instance;
+select sysdate from dual;
+
+set pages 1000 lines 1000
+col total_mb for 99999999
+select group_number,name,state,
+    total_mb, 
+    total_mb - free_mb used_mb,
+    free_mb,
+    ROUND(100 * NVL(free_mb,0) / total_mb, 2) percent_livre
+from gv$asm_diskgroup 
+where group_number > 0
+--and name in ('FRA','RP1_REDO_A','RP1_REDO_B')
+order by GROUP_NUMBER;
+
+
+====================================================================================================================
+--SCRIPT VER BACKUP PELO NÚMERO DE DIAS INFORMADO 
+====================================================================================================================
+set lines 220
+set pages 1000
+col cf for 9,999
+col df for 9,999
+col elapsed_seconds heading "ELAPSED(sec)"
+col i0 for 9,999
+col i1 for 9,999
+col l for 9,999
+col output_mbytes for 9,999,999 heading "OUTPUT(Mb)"
+col session_recid for 999999 heading "SESSION(RECID)"
+col session_stamp for 9999999999 heading "SESSION(STAMP)"
+col status for a10 trunc
+col time_taken_display for a10 heading "TIME"
+col output_instance for 9999 heading "OUT(INST)"
+select
+  j.session_recid, j.session_stamp,
+  to_char(j.start_time, 'yyyy-mm-dd hh24:mi:ss') start_time,
+  to_char(j.end_time, 'yyyy-mm-dd hh24:mi:ss') end_time,
+  (j.output_bytes/1024/1024) output_mbytes, j.status, j.input_type,
+  decode(to_char(j.start_time, 'd'), 1, 'Sunday', 2, 'Monday',
+                                     3, 'Tuesday', 4, 'Wednesday',
+                                     5, 'Thursday', 6, 'Friday',
+                                     7, 'Saturday') dow,
+  j.elapsed_seconds, j.time_taken_display,
+  x.cf, x.df, x.i0, x.i1, x.l,
+  ro.inst_id output_instance
+from V$RMAN_BACKUP_JOB_DETAILS j
+  left outer join (select
+                     d.session_recid, d.session_stamp,
+                     sum(case when d.controlfile_included = 'YES' then d.pieces else 0 end) CF,
+                     sum(case when d.controlfile_included = 'NO'
+                               and d.backup_type||d.incremental_level = 'D' then d.pieces else 0 end) DF,
+                     sum(case when d.backup_type||d.incremental_level = 'D0' then d.pieces else 0 end) I0,
+                     sum(case when d.backup_type||d.incremental_level = 'I1' then d.pieces else 0 end) I1,
+                     sum(case when d.backup_type = 'L' then d.pieces else 0 end) L
+                   from
+                     V$BACKUP_SET_DETAILS d
+                     join V$BACKUP_SET s on s.set_stamp = d.set_stamp and s.set_count = d.set_count
+                   where s.input_file_scan_only = 'NO'
+                   group by d.session_recid, d.session_stamp) x
+    on x.session_recid = j.session_recid and x.session_stamp = j.session_stamp
+  left outer join (select o.session_recid, o.session_stamp, min(inst_id) inst_id
+                   from GV$RMAN_OUTPUT o
+                   group by o.session_recid, o.session_stamp)
+    ro on ro.session_recid = j.session_recid and ro.session_stamp = j.session_stamp
+where j.start_time > trunc(sysdate)-&NUMBER_OF_DAYS
+order by j.start_time;
+
+
+====================================================================================================================
+-- SCRIPT VER BACKUP
+====================================================================================================================
+
+set lines 150
+set pages 900
+col start for a20
+col end for a20
+col status format a11
+col input_bytes_display format a10
+col output_bytes_display format a10
+col status_weight format 99999
+SELECT 
+    to_char(start_time,'YYYY.MM.DD HH24:MI:SS') "Start" ,
+    to_char(end_time,'YYYY.MM.DD HH24:MI:SS') "End",
+    status,
+    status_weight, 
+    input_type,  
+    input_bytes_display, 
+    output_bytes_display
+FROM 
+    V$RMAN_BACKUP_JOB_DETAILS
+WHERE 
+    ( start_time between (SYSDATE - 1) and  (SYSDATE ))
+order by 
+    start_time;
