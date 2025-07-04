@@ -1,0 +1,16 @@
+cpcpsdddswcorp01:/home/oracle>export ORACLE_SID=CQ1
+cpsdddswcorp01:/home/oracle>export ORACLE_HOME=/u01/app/oracle/product/12.2.0.1/gisptad
+cpsdddswcorp01:/home/oracle>export PATH=$PATH:$ORACLE_HOME/bin
+cpsdddswcorp01:/home/oracle>sqlplus / as sysdba
+
+
+
+cpcpsdddswcorp01:/home/oracle>export ORACLE_SID=PPO
+cpsdddswcorp01:/home/oracle>export ORACLE_HOME=/oracle/PPO/121
+cpsdddswcorp01:/home/oracle>export PATH=$PATH:$ORACLE_HOME/bin
+cpsdddswcorp01:/home/oracle>sqlplus / as sysdba
+
+cpcpsdddswcorp01:/home/oracle>export ORACLE_SID=D03
+cpsdddswcorp01:/home/oracle>export ORACLE_HOME=/oracle/PPO/121
+cpsdddswcorp01:/home/oracle>export PATH=$PATH:$ORACLE_HOME/bin
+cpsdddswcorp01:/home/oracle>sqlplus / as sysdba
