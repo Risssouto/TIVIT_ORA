@@ -1,0 +1,16 @@
+Olá Amigos, bom dia a Todos
+ 
+Por favor, sigam essa orientação para execução de scripts no ambiente Alelo.
+ 
+Instrução para Verificação de Objetos Inválidos Antes e Depois da Execução de Scripts
+Verificação Inicial: Antes de executar qualquer script, o DBA deve consultar os objetos inválidos no banco de dados para garantir que não haja objetos inválidos anteriores à execução dos scripts. 
+SQL> SELECT OWNER, OBJECT_NAME , OBJECT_TYPE , STATUS FROM DBA_OBJECTS WHERE STATUS <> 'VALID';
+SQL>select owner, OBJECT_NAME , OBJECT_TYPE from all_objects where status= 'INVALID';
+Execução do Script: Após garantir que todos os objetos estão válidos, execute os scripts da GMUD.
+Verificação Após Execução: Assim que os scripts da GMUD forem executados, o DBA deve novamente verificar se algum objeto ficou inválido.
+Tentativa de Recompilação: Caso algum objeto tenha ficado inválido, o DBA deverá tentar recompilar esses objetos para validar se o problema é persistente.
+SQL> @$ORACLE_HOME/rdbms/admin/utlrp.sql
+SQL>ALTER PACKAGE SYSCC.PK_CC_URA COMPILE BODY;
+Rollback e Comunicação com o Cliente: Se, após a recompilação, anda houver objetos inválidos, o DBA deve informar o cliente sobre o ocorrido, fornecendo detalhes sobre o objeto e o erro encontrado. Neste caso, o script deve ser revertido, e o DBA deve realizar um rollback.
+Da um se você leu ate aqui!
+Não podemos permitir que após a execução dos scripts objetos fiquem inválidos.
