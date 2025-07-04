@@ -1,0 +1,27 @@
+col dest_name format a20
+col status format a20
+col destination format a20
+select dest_name,status,destination from V$ARCHIVE_DEST;
+
+
+col dest_name format a20
+col status format a20
+col destination format a20
+select destination,status from V$ARCHIVE_DEST where status='VALID';
+
+col dest_name format a20
+col status format a20
+col destination format a20
+col error format a50
+select dest_name,status,destination,error from V$ARCHIVE_DEST where DEST_NAME in ('LOG_ARCHIVE_DEST_1','LOG_ARCHIVE_DEST_2');
+
+
+col dest_name format a20
+col status format a20
+col error format a20
+
+select DEST_name,status ,error from v$archive_dest_status where DEST_ID=2;
+
+show parameter show parameter LOG_ARCHIVE_DEST_2
+
+
