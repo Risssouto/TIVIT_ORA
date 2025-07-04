@@ -1,0 +1,18 @@
+---Ao executar o script de sessões em Locks e se tiver muitas sessões para matar, executar esse script que ja monta
+o Kill
+
+select 'ALTER SYSTEM DISCONNECT SESSION '''||sid||','||serial#||''' IMMEDIATE;'
+from v$session
+where username is not null
+and status in ('SNIPED','INACTIVE') AND seconds_in_wait > 1800; 
+
+select 'ALTER SYSTEM KILL SESSION '''||sid||','||serial#||''' IMMEDIATE;'
+from v$session
+where username is not null
+and status in ('SNIPED','INACTIVE') AND seconds_in_wait > 1800; 
+
+--- seconds_in_wait , sessoes inativas maior que 30 min.
+
+SELECT 'ALTER SYSTEM KILL SESSION ''' || sid || ',' || serial# || ''';'
+FROM v$session
+WHERE status = 'INACTIVE';
