@@ -1,0 +1,43 @@
+alter user "2020343" identified by P07cW43f8uCny;
+ 
+create user "2020343" identified by P07cW43f8uCny;
+ 
+grant create session to "2020343";
+ 
+grant connect to "2020343";
+ 
+grant select any table to "4000534";
+ 
+SELECT * FROM DBA_USERS WHERE GRANTEE;
+ 
+SELECT USERNAME FROM DBA_USERS WHERE USERNAME LIKE '4000534';
+ 
+CREATE USER "2012922" IDENTIFIED BY 2g5W1VulFo
+DEFAULT TABLESPACE USERS
+TEMPORARY TABLESPACE TEMP;
+ 
+User: "2020343" 
+Senha: P07cW43f8uCny
+
+create user ZABBIX identified by TQPS0012;
+ 
+select username, account_status, created, profile, expiry_date from dba_users where username like '%2008028%';
+select Distinct GRANTEE,PRIVILEGE from dba_sys_privs where Grantee in ('2008028') order by Grantee;
+select Distinct GRANTEE,GRANTED_ROLE from dba_role_privs where grantee in('2008028') order by Grantee;
+select Distinct GRANTEE,PRIVILEGE,owner from dba_tab_privs where Grantee in('2008028') order by Grantee,owner;
+
+
+
+select table_name, owner from dba_tables where table_name in ('AGENCIA_LOG_ENVIODOC',
+'AGENCIA_EMPRESAS',
+'AGENCIA_TIPO_DOCUMENTO',
+'AGENCIA_MOTIVO_REJEICAO',
+'AGENCIA_ADMIN_USUARIO',
+'AGENCIA_STATUS_VALIDACAO');
+
+
+grant select on USRAGV.AGENCIA_EMPRESAS to p600943;
+grant select on USRAGV.AGENCIA_TIPO_DOCUMENTO to p600943;
+grant select on USRAGV.AGENCIA_MOTIVO_REJEICAO to p600943;
+grant select on USRAGV.AGENCIA_ADMIN_USUARIO to p600943;
+grant select on USRAGV.AGENCIA_STATUS_VALIDACAO to p600943;
