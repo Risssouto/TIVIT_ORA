@@ -1,0 +1,3 @@
+SELECT tablespace_name, bigfile
+FROM dba_tablespaces
+WHERE tablespace_name = 'TS_ODWDI_IDX';
