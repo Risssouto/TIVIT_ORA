@@ -1,0 +1,2 @@
+ALTER SYSTEM SET log_archive_dest_1='location=+PIMP_DATA' sid='*' scope=both;
+ALTER SYSTEM SET log_archive_dest_1='LOCATION=+PIMP_RECO' sid='*' scope=both;
