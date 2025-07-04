@@ -1,0 +1,24 @@
+-- Execução das instancias no RAC
+ 
+srvctl status database -d db_unique_name
+srvctl config database -d db_unique_name
+srvctl status asm -n nodename
+
+
+sudo su - grid 
+
+  
+
+crsctl status resource –t 
+
+  
+
+srvctl status instance -i cpmappq2 -d cpmappq 
+
+  
+
+srvctl upgrade database -d cpmappq -oraclehome /u02/app/oracle/product/12.2.0/dbhome_1 
+
+  
+
+srvctl start database -d cpmappq 
