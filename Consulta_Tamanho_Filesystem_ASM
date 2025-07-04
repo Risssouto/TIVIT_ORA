@@ -1,0 +1,7 @@
+set lines 200 pages 200
+col path format a30
+col name format a20
+col state format a10
+col mount_status format a10
+set feedback off
+select GROUP_NUMBER,NAME,TOTAL_MB,FREE_MB,STATE,OFFLINE_DISKS,round((FREE_MB/TOTAL_MB)*100,1) "% Free" from v$asm_diskgroup where STATE = 'CONNECTED';
