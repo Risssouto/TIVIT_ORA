@@ -1,0 +1,51 @@
+SET LINES 1500
+prompt ===================================  ;
+prompt Ultimos 30 backups - RMAN ;
+prompt ===================================  ;
+prompt ;
+CLEAR COLUMNS BREAKS COMPUTES
+COLUMN backup_name           FORMAT A20    HEADING 'Nome Backup'          ENTMAP off
+COLUMN start_time            FORMAT a20    HEADING 'Iniciado'             ENTMAP off
+COLUMN elapsed_time          FORMAT a10    HEADING 'Tempo'                ENTMAP off
+COLUMN status                FORMAT A10    HEADING 'Status'               ENTMAP off
+COLUMN input_type            FORMAT A10    HEADING 'Tipo|Entrada'         ENTMAP off
+COLUMN output_device_type    FORMAT A08    HEADING 'Device|Saida'         ENTMAP off
+COLUMN input_size            FORMAT A10    HEADING 'Tamanho|Entr.'        ENTMAP off
+COLUMN output_size           FORMAT A10    HEADING 'Tamanho|Saida'        ENTMAP off
+COLUMN output_rate_per_sec   FORMAT A10    HEADING 'Rate|Saida|Por Seg'   ENTMAP off
+SELECT /*+ RULE */
+    r.command_id                                   backup_name
+  , TO_CHAR(r.start_time, 'DD/MM/RRRR HH24:MI:SS') start_time
+  , r.time_taken_display                           elapsed_time
+  , DECODE(   r.status
+            , 'COMPLETED'
+            , r.status
+            , 'RUNNING'
+            , r.status
+            , 'FAILED'
+            , r.status
+            , r.status
+    )                                                                                       status
+  , r.input_type                                                                            input_type
+  , r.output_device_type                                                                    output_device_type
+  , r.input_bytes_display           input_size
+  , r.output_bytes_display          output_size
+  , r.output_bytes_per_sec_display  output_rate_per_sec
+FROM
+    (select
+         command_id
+       , start_time
+       , time_taken_display
+       , status
+       , input_type
+       , output_device_type
+       , input_bytes_display
+       , output_bytes_display
+       , output_bytes_per_sec_display
+     from v$rman_backup_job_details
+     order by start_time DESC
+    ) r
+WHERE
+  rownum < 30 and input_type='DB FULL'
+
+/
