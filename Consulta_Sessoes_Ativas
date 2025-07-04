@@ -1,0 +1,65 @@
+-- Mostra sess es ATIVAS
+-- =====================
+set lines 160 pages 10000 feed off head on Veri OFF Echo OFF wrap oN
+COL INST FOR A2 
+set COLSEP '|'
+COL username FORMAT A15
+COL machine  FORMAT A19
+COL logon_time FORMAT A14 head 'LOGON|TIME'
+COL program FORMAT A35
+COL module  FORMAT A10
+COL sid FORMAT A6
+COL serial# FORMAT '999999'
+COL spid FORMAT 99999999
+COL LAST_CALL_ET NOPRINT
+-- COL status FORMAT A10 noprint
+COL LOCKWAIT FORMAT A4 head 'LOCK|WAIT'
+COL IDLE FOR A10
+COL OSUSER  FORMAT A18
+COL 0 noprint
+SELECT 
+       -- to_char(s.INST_ID) INST,  
+       NVL(s.username, '(oracle)') AS username,
+       decode(s.sid, My.SidMy,'* ','')||s.OSUSER OSUSER,
+       to_char(s.sid) sid,
+       to_char(s.INST_ID) INST,  
+       s.serial#,
+       to_number(p.spid) SPID,
+       substr(s.lockwait,1,4) LOCKWAIT,
+--       s.status,
+       substr(s.machine,1,19) machine,
+       TO_CHAR(s.logon_Time,'DD/MM/RR HH24:MI') AS logon_time,
+       substr(s.program,1,35) program,
+       substr(s.module,1,10) MODULE,
+       floor(s.last_call_et/3600)||':'||floor(mod(s.last_call_et,3600)/60)||':'||mod(mod(s.last_call_et,3600),60) idle,
+       LAST_CALL_ET 
+FROM   gv$session s,
+       gv$process p,
+       (SELECT SID SidMy FROM V$SESSION WHERE AUDSID = USERENV('SESSIONid') ) My
+WHERE  s.paddr  = p.addr
+AND    s.INST_ID= p.INST_ID
+AND    s.status = 'ACTIVE'
+AND    s.username is not null
+AND    s.sid = My.SidMy(+)
+AND    s.program not like '%(PZ%'
+-- AND   s.OSUSER ='92035070'
+--    AND  s.OSUSER='92035070'
+--    AND  s.module not like '%sqlplus.exe%'
+--    AND  s.module not like '%SQL*Plus%'
+--    AND  s.module not like '%backup%'
+-- ORDER BY s.username, s.OSUSER
+-- UNION all
+-- select '--','----------','----------',0, 0, 0,'----------','----------','-------------------','------------------------','','' from dual
+UNION ALL
+SELECT '>>','System:'||to_char(SUM(DECODE(s.type,'BACKGROUND',1,0))) system_sessions,
+       'At:'||to_char( SUM(DECODE(s.username,NULL,0,DECODE(s.status,'ACTIVE',1,0))) )active_users,
+       '',
+       SUM(DECODE(s.username,NULL,0,DECODE(s.status,'ACTIVE',0,1))) inactive_users,
+       SUM(DECODE(s.type,'BACKGROUND',0,DECODE(s.server,'DEDICATED',1,0))) - SUM(DECODE(s.type,'BACKGROUND',0,DECODE(s.username,NULL,DECODE(SIGN(INSTR(p.program,'(J')),0,0,1),0))) - SUM(DECODE(s.type,'BACKGROUND',0,DECODE(s.username,NULL,DECODE(SIGN(INSTR(p.program,'(CJQ')),0,0,1),0))) dedicated,
+       to_char(SUM(DECODE(s.username,NULL,0,1))) user_sessions,
+       '','','','','',-1 LAST_CALL_ET 
+  FROM gv$session s, gv$process p
+ WHERE p.addr=s.paddr
+   AND s.INST_ID= p.INST_ID
+ORDER BY last_call_et DESC
+/
