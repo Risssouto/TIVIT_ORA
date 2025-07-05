@@ -1,0 +1,33 @@
+sudo du -h /orabkp  | sort -rh | head -100
+
+find . -name "log_*.xml" -mtime +5 -exec rm -f {} \; 
+ 
+find . -name "*.trc" -mtime +5 -exec rm -f {} \; 
+ 
+find . -name "*.trm" -mtime +5 -exec rm -f {} \; 
+ 
+find . -name "*.aud" -mtime +5 -exec rm -f {} \;
+
+find . -name "*.log" -mtime +5 -exec rm -f {} \;
+
+find . -name "*.xml" -mtime +5 -exec rm -f {} \;
+
+find cd /u01/ -type f -exec du -h {} + | sort -rh | head -n 10
+
+find . -xdev -type f -size +100000 -exec ls -lrth {} \;
+find . -xdev -type f -size +1000 -exec du -sk {} \; | sort -n | tail
+find . -xdev -type f -size +10000 -exec du -sk {} \; | sort -n | tail
+
+
+du -sk * | sort -n
+
+
+ps -ef | grep pmon
+
+sqlplus / as sysdba
+
+cat /etc/oratab
+
+verificar as  maiores pastas:
+du -sh * (linux)
+du -sg * (aix)
