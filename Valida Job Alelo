@@ -1,0 +1,105 @@
+alter session set nls_date_format='dd/mm/yy hh24:mi';
+col logon_time format a15
+col username for a15
+col machine for a30
+select inst_id, sid, serial#, sql_id, username, machine, logon_time, status from gv$session where machine like'%WBKOAPPSPPRD01'
+and status = 'ACTIVE' order by 7,8 desc;
+
+
+
+SELECT
+    s.inst_id,
+    s.sid,
+    s.serial#,
+    s.username,
+    s.machine,
+    s.logon_time,
+    s.status,
+    s.sql_id,
+    q.sql_text
+FROM
+    gv$session s
+JOIN
+    gv$sql q ON s.sql_id = q.sql_id AND s.inst_id = q.inst_id
+WHERE
+    s.machine LIKE '%WBKOAPPSPPRD06'
+    AND s.status = 'ACTIVE'
+ORDER BY
+    s.logon_time, s.machine DESC;
+
+
+
+
+
+
+set pages 40
+---set linesize 200
+select a.instance_number inst_id, a.snap_id,a.plan_hash_value, to_char(begin_interval_time,'dd-mon-yy hh24:mi') time,
+abs(extract(minute from (end_interval_time-begin_interval_time)) + extract(hour from (end_interval_time-begin_interval_time))*60 + extract(day from (end_interval_time-begin_interval_time))*24*60) minutes,
+executions_delta executions, round(ELAPSED_TIME_delta/1000000/greatest(executions_delta,1),4) "avg duration (sec)"
+from dba_hist_SQLSTAT a, dba_hist_snapshot b
+where sql_id='1u1xjmcvr15rn' and a.snap_id=b.snap_id and a.instance_number=b.instance_number
+order by snap_id ASC, a.instance_number;
+
+
+set pages 40
+---set linesize 200
+select a.instance_number inst_id, a.snap_id,a.plan_hash_value, to_char(begin_interval_time,'dd-mon-yy hh24:mi') time,
+abs(extract(minute from (end_interval_time-begin_interval_time)) + extract(hour from (end_interval_time-begin_interval_time))*60 + extract(day from (end_interval_time-begin_interval_time))*24*60) minutes,
+executions_delta executions, round(ELAPSED_TIME_delta/1000000/greatest(executions_delta,1),4) "avg duration (sec)"
+from dba_hist_SQLSTAT a, dba_hist_snapshot b
+where sql_id='g8f7aw7va4d9p' and a.snap_id=b.snap_id and a.instance_number=b.instance_number
+order by snap_id ASC, a.instance_number;
+
+alter system kill session '6650,29811,@2';
+
+alter system kill session '20,22261,@2';
+
+
+alter session set nls_date_format='dd/mm/yy hh24:mi';
+col logon_time format a15
+col username for a15
+col machine for a30
+select inst_id, sid, serial#, sql_id, username, machine, logon_time, status from gv$session where status = 'ACTIVE' order by 7,8 desc;
+
+
+
+SELECT 
+    s.sid, 
+    s.serial#, 
+    s.sql_id
+FROM 
+    v$session s
+WHERE 
+    s.sql_id = '1c173v4x4hk1h';
+	
+	
+COLUMN sid FORMAT A10;
+SELECT 
+    s.sid, 
+    s.serial#, 
+    s.sql_id
+FROM 
+    v$session s
+WHERE 
+    s.sql_id = '1c173v4x4hk1h';
+	
+	
+SELECT 'ALTER SYSTEM KILL SESSION ''' || s.sid || ',' || s.serial# || ''';' 
+FROM v$session s
+WHERE s.sql_id = '1c173v4x4hk1h';
+
+
+6. Se ainda houver sessões bloqueadas, você pode tentar matá-las no nível do sistema operacional. Para fazer isso, execute o seguinte comando:
+
+```
+kill -9 spid
+```
+
+Substitua spid pelo valor correspondente da sessão que você deseja matar.
+
+
+advisor:
+Pega o sql_id e depois executa o comando abaixo.
+
+@?/rdbms/admin/sqltrpt
