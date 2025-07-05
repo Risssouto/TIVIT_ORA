@@ -1,0 +1,62 @@
+RMAN> CROSSCHECK ARCHIVELOG ALL;
+ 
+To list all expired archive logs detected by the CROSSCHECK command use:
+RMAN> LIST EXPIRED ARCHIVELOG ALL;
+ 
+To delete all expired archive logs detected by the CROSSCHECK command use:
+RMAN> DELETE EXPIRED ARCHIVELOG ALL;
+
+Lista os archives antigos:
+
+list archivelog all;
+
+list copy of archivelog until time 'SYSDATE-9';
+list copy of archivelog until time 'SYSDATE-8';
+list copy of archivelog until time 'SYSDATE-3';
+
+depois deleta os mais antigos:
+
+delete archivelog until time 'SYSDATE-9';
+delete archivelog until time 'SYSDATE-8';
+delete archivelog until time 'SYSDATE';
+
+
+Delatando os archives ja backupeados e aplicados:
+
+rman target /
+LIST ARCHIVELOG ALL BACKED UP 1 TIMES TO device type 'SBT_TAPE';
+
+
+delete archivelog all backed up 1 times to device type 'SBT_TAPE';
+delete force archivelog all backed up 1 times to device type 'SBT_TAPE';
+crosscheck archivelog all;
+
+DELETE ARCHIVELOG  ALL  BACKED UP 1 TIMES; - Gustavo
+
+delete force archivelog all;
+
+
+
+
+run 
+
+{
+crosscheck archivelog all;
+crosscheck copy;
+crosscheck backup;
+delete noprompt obsolete;
+delete noprompt expired copy;
+delete noprompt expired archivelog all;
+delete noprompt expired backup;
+}
+
+
+set linesize 500
+col NAME for a50
+select name, ROUND(SPACE_LIMIT/1024/1024/1024,2) "Allocated Space(GB)", 
+round(SPACE_USED/1024/1024/1024,2) "Used Space(GB)",
+round(SPACE_RECLAIMABLE/1024/1024/1024,2) "SPACE_RECLAIMABLE (GB)" ,
+(select round(ESTIMATED_FLASHBACK_SIZE/1024/1024/1024,2) 
+from V$FLASHBACK_DATABASE_LOG) "Estimated Space (GB)"
+from V$RECOVERY_FILE_DEST;
+
