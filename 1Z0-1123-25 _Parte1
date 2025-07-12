@@ -1,0 +1,130 @@
+Fundamento de Migração para Nuvem ( Migration Fundamentals)
+
+Quais são os principais motivos para fazer migrações
+para a nuvem?
+
+Principais impulsionadores de negócios ( Business Drive)
+
+- A migração para nuvem ajuda o cliente a sair de seu data center (Data Center Exit)
+e migrar todos os seus aplicativos para uma nuvem pública como a
+Oracle OCI Infrastructure.
+
+- Redução de Custo Operacional  e custo de Infraestrutura
+(Reduce Operational and Infrastructure Costs)
+
+- A Nuvem oferece agilidade e flexibilidade nos negocios.
+(Business Agility and flexibility).
+
+- Como os ambientes de nuvem são altamente flexiveis, os recursos podem 
+ser provisionados sob demanda ou até mesmo diminuidos, dependendo da necessidade do negócio.
+
+- Business Continuity- garante que a organização continue a funcionar durante interrupções 
+e até mesmo desastre.
+
+Os serviços em nuvem são projetados para proteçãao com disponibilidade continua.
+Oferece suporte rápido , confiável e de recuperação de desastre.
+
+-Apoio ao crescimento de negócio (Business Growth)
+As organizações buscam expandir seu negocio.
+
+- Segurança (Improved Security).
+
+Drivers Técnicos:
+Hardware and Software  end of support
+
+Scalability and Resiliency
+Em um ambiente de nuvem os recurso podem provisionados ou desativados
+automaticamente com base na demanda.
+Todos os recursos em uma nuvem são projetados para serem altamente resilientes 
+para evitar qualquer ponto único de falhas.
+
+Improved Perfomance
+Address Resource Limitations
+Modernize Applicaations
+Tecnnology Integrations and Innovations
+
+Quatro estratégias de migrações para nuvem
+(Cloud Migration Strategies)
+
+1- Re-Host 
+Conhecido como migração ou simplismente movimentaçao de aplicativos de uma origem para um destino 
+sem modificação - Migrate (move) Apps from source to target without modification.
+Exemplo: Migração de VMs de um local baseado em VMware para a solução de VMware do Oracle Cloud
+Migration VMs from on-premises to OCVS (Oracle Cloud VMware Solution)
+
+2- Re-platform
+Migrate Apps from source to a new target platform with reshape.
+Migrar aplicativos para uma nova plataforma de destino com uma nova forma.
+ Exemplo: Migrate VMs from on-premises to OCI Compute.
+ 
+3- Re- architect ( ou Refatoração).
+Migrates Apps ( Refactor) from source to a target platform
+with a new architecture ( arquitetura mais recente).
+Exemplo: Migrate VMs from on-premises to OCI OKE (Container Engine for a Kubernetes).
+
+4-Re-Purchase ( Recompra)
+Decommision Apps in source and re-purchase in the target.
+Desativar aplicativos na fonte e comprar na forma de software como serviço no ambiente de nuvem de destino
+
+Exemplo:Move to a different product from Software as a service
+
+
+  Define Business Case:
+  
+  Toda migração começa com a definição de um caso
+  de negocios.
+  O que é um caso de negocio? Inclui vários fatores de tomada de decisão:
+  
+  A primeira é a compreensão das princopaos razões para migrar (Top reasons to migrate).
+  Na sequencia , documentar os principais objetivos, metas e benefícios que serão
+  alcançados com a conclusão dessa tarefa de migração ( Objectives,Goals, Benefits).
+  O caso de negócios também precisaria capturar as prioridades dos clientes que
+  precisam ser abordadas nessa fase (Customer Priorities).
+  Em seguida definir marcos e programações quando a fase de migração deve começar e terminar
+  (Milestones and Schedules).
+  E depois listá-los em uma ordem (Application Scope).
+  E também documentar o que define os critérios de sucesso, onde pode haver
+  um conjunto de etapas de validação que precisam ser executadas após a migração (Success critéria).
+  
+  Portanto o Business Case é a primeira ou uma das etapas que inicia a tarefa de migração.
+  
+   CORE OF MIGRATIONS
+   
+   Aqui temos o núcleo de migração para a nuvem.
+   E inclui vários elementos que estão conectados uns com os outros, começando 
+   um grupo de pessoas ( People).
+   Há pessoas em diferentes funções a serem envolvidas desde o ínicio da definição
+   do caso de negócios durante a conclusão de uma tarefa de migração.
+   
+   Temos um conjunto técnico (Process).
+   Vamos analisar a migração de aplicativos críticos para os negócios e neste caso deve
+   haver um conjunto de processos a serem seguidos, por exemplo, comunicar-se com as partes interessadas,
+   identificar recursos de pessoas, programar cronogramas de gerenciamento de mudanças, quando
+   executar essas migrações e assim por diante.
+   E ultima delas são a tecnologia ( Tecnology).
+   É aqui que escolhemos quais ferramentas e tecnologias serão usadas.
+   
+		Migrations Phases
+		
+	1 Fase:Discovery - Aqui é a fase onde vamos descobrir tudo sobre o ambiente que está migrando
+	-About Source Environment
+	-Discover resources and export to an Inventory
+	-Run assessments
+	
+	2- Fase: Design -Aqui é sobre o ambiente de destino para o qual você está migrando
+	-About Target Environment
+	-Validate and Design based on assessments results
+	-Use reference architectures
+	
+	3-Fase : Migrate - Fase final
+	-About Migrations Tools and Methods
+	-Virtual Machines, Data, Database, Apps
+	
+	
+	
+		
+	
+  
+
+
+
