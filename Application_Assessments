@@ -1,0 +1,52 @@
+-----Application Assessments----
+
+Avaliação de aplicativo é um estágio vital no processo de descoberta da origem.
+
+Migrar um conjunto de VMs para o OCI.
+Ao iniciar o processo de migração, foi analisado que existe uma carga 
+de aplicativos complexos sen.Como avaliar essas aplicativos?
+Neste caso, o ideal é que tenha  proprietarios de aplicativos e usuário especificos 
+que precisam estar envolvidos (Application owners  and Users who are involved).
+
+---Application Discovery - Infraestructure  Details ----
+Detalhes de Infraestutura que precisam ser capturados.
+
+What do Assess                   -> Details
+Application types                      Identify the applications types - web , app or database
+Complexity of VM                       Categorize into simple , Medium, Complex based configuration
+Operating system and arch of VM        Identify OS (ex:Windows or Linux)and architecture (32-bit or 64 -bit)
+Application dependencies               Understand dependencies and workflows critical  for application
+
+(entendendo as depedencias entres os aplicativos, ajuda a priorizar  e agrupar as VMs
+que devem ser migradas juntas).
+
+Existem outras verifivcações  no nível do sistema operacional, validações a serem 
+como proteção do sistema operacional ou as atualizações recentes necessárias para o sistema operacional.
+seria o caso do:
+
+OS Hardening and requires updates      Identify if any OS Hardening applied and latest updates / patchs
+Clustering configurations              Determine clustering configured at Hardware or OS level etc.
+Disk-level configuration               Determine any logical Volume Managers (LVMs),Disk encryption
+Agent software and versions            Identify any 3rd party agents installed (including VMware Tools)
+
+Ao migrar VM para OCVS (Oracle Cloud VMware Solution) as ferramentas VMware precisam estar atualizadas
+na VM selecionada para a migração.
+
+--- Application Discovery -- Operational---
+
+Descoberta a nível operacional a ser feita para o aplicativo.
+Qual é o objetivo do ponto de recuperação para cada aplicativo (Recovery Point objective(RPO))?
+
+O motivo do ponto de recuperação ou RPO é uma quantidade máxima aceitável de perda de dados
+após o evento , como uma tarefa de migração planejada e é expresso como uma quantidade de tempo.
+
+O que é Recovery Time Objective (RTO)?
+É o tempo máximo aceitável necessário para restaurar o aplicativo após a migração.
+
+Recovery Point objective(RPO)
+Recovery Time Objective (RTO)
+Service Level Agreement (SLA) of application
+Login procedure for VMs (Local or Domain)
+Identify Apps and OS Licensing requirements
+
+
