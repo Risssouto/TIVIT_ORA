@@ -1,0 +1,94 @@
+ Cenário de Migração ( Migrations Cenários):
+
+- Migrate VMs from on-premises to OCI Compute
+Migrar máquinas virtuais do local para a comptação nativa do OCI
+
+-Migrate VMs from on-premises to Oracle Cloud VMware Solution 
+Migrar máquinas virtuais para a solução VMWare ou OCVS do Oracle Cloud
+
+-Migrate Containers based applications to OCI OKE
+Migrar aplicativos baseados em contêiner para o OCI OKE, Oracle 
+Container Engine for Kubernetes.
+
+- Migrate Storage and Data to OCI
+Técnicas de armazenamento e migração de dados na OCI
+
+-Migrate Oracle Database from on-premises to OCI
+Métodos de migração para bancos de dados Oracle do local para a
+OCI, o que é explicado em um nível muito alto.
+
+ SERVIÇOS DE MIGRAÇÃO (MIGRATION SERVICES)
+ 
+ 1- Conjunto de Serviço de Migração: Oracle Cloud Migrations Service
+ 
+ -Migrate Virtual Machines from on-premises to native OCI
+ Compute Instances. 
+ Migrar VMs de um ambiente de origem, como local, para instâncias
+ de computação do OCI.
+ 
+ -Hybrid Cloud Extension (Produto VMware da Broadcom).
+ É chamado de nuvem híbrida ou chamamos isso de SGX.
+ Migrate Virtual Machines from on-premises to Oracle Cloud
+ VMware Solution.
+ É usado para migrar máquinas virtuais do local para a solução
+ VMware ou OCVS do Oracle Cloud
+ 
+ 2- Conjunto de Serviço de Migração: Storage and Data (Armazenamentos de Dados).
+ 
+ -Block Volume Replication
+ Replicate OCI Block storage across OCI Regions for OCI to OCI Migrations.
+ Replicação de Volume em blocos. Voce pode replicar volumes de armazenamento em blocos
+ do OCI em regiões do OCI para obter migrações regionais do OCI  para o OCI
+ 
+ -Backup and Clone Compute Instances (Backup e Clone) 
+ Backup the boot volume  and copy  to another OCI regions
+ Voce pode fazer backup do volume de inicialização  copiá-lo para outra região do OCI.
+ 
+ -Full Stack Disaster Recovery service
+ Orchestrate disaster recovery between OCI regions
+ 
+ A Recuperaçõ de Desastre do Fullstack é um serviço nativo do OCI que pode ser 
+ usado para orquestrar a recuperação de desastres de instâncias entre regiões do OCI.
+ 
+ -Data Transfer Service
+ Migrate Data with Disk-based transfer ,Appliance-based transfer  and appliance-based export
+ 
+ Os serviços de transferencia de dados são usados para migrar  dados para o OCI
+usando métodos como tranferencia baseada em disco, trans    ferencia baseada em appliance
+e exportação baseada em appliance.
+
+-Storage Gateway
+Migrate Data from Applications that supports common filesystem protocols  like NFS to Object Storage.
+Gateway de armazenamento é um método on-line de tranferencia de dados para migrar de aplicativos
+que suportam protocolos comuns de sistemas de arquivos , como NFS, para o armazenamento de objetos
+do OCI.
+
+3-Método de migração: Alguma ferramentas de migração de banco de dados
+  Data Pump; Logical Migration Method, that supports same or cross-plataform migration
+  from source oracle database to OCI database service.
+  é um metodo de migração lógica que suporta a migração de banco de dados Oracle de origem 
+  para o serviço de banco de dados OCI
+  
+  Remoting Clone: Physical migration method  tha can create a physical copy of your source oracle
+  database to non_autonomous  oracle database services in OCI.
+  Clonagem remota que usa uma técnica de migração física com a criação de uma cópia física do banco de dados
+  Origem em um serviço de banco de dados oracle não autonomo na OCI.
+  
+  Zero downtime migration
+  Automates end-to-end oracle database migration to OCI database service
+  A migração sem tempo de inatividade ou o ZDM é usado para automatizar as migrações de banco de dados de 
+  ponta-a-ponta para o serviço de banco de dados 
+  
+  Database migration service
+  OCI native oracle database migration service that automates entire migration of source
+  oracle database to OCI oracle database service.  
+  
+  O serviço de migração de banco de dados do OCI é o serviço nativo que automatiza
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
