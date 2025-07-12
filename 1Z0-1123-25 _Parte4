@@ -1,0 +1,82 @@
+Understanding Source Discovery (Entendendo sobre a descoberta de origem)
+
+O que significa descoberta da fonte (Discovery Goals)?
+
+Discovery is the process of gaining comprehensive understanding about
+the source environment to plan and execute a successful migration.
+
+A descoberta é o processo de capturar uma compreensão detalhada e mais profunda
+sobre o ambiente de origem como o local. Isso ajudará a planejar e executar uma
+migração bem-sucedida.
+
+Objetivos a seram alcançados usando o Discovery Process:
+
+1- Determine Resources, Sizing and Compatibility
+Determinas os recurso usados pelas VMs. Isso ajudará no dimensionamento
+correto dessas VMs e também na validação da compatibilidade para o ambiente de 
+destino.
+
+2- Design Target Environment
+Projetar o ambiente de destino. Dependendo da configuração do ambiente de origem,
+você poderá decidir a plataforma de detino e ela decidirá a arquitetura.
+
+3-Estimate Cost for resources
+Migrar uma VM para outro ambiente ou outra plataforma sigificaria que
+poderia haver uma nova forma a ser usada. E o processo de descoberta ajudará a estimar quanto
+custará para os recursos usarem no ambiente de destino.
+
+4- Accurate Planning to Reduce Risks
+A tarefa de migração sempre terá risco, pois sempre envolve a migração de aplicativos 
+essenciais aos negócios.Portanto uma descoberta adequada ajudaria a planejar o processo
+de miração e também a reduzir o risco. 
+
+5-Prioritize VMs for migration
+Priorizar a VM para a migração é uma tarefa importante
+que significa classificar as VMs que devem ser migradas, quais VMs devem ser combinadas
+e migradas juntas, formando uma onda de migração.
+
+----Dicovery Methods-------
+Quais são os metodos de descoberta e como capturamos esses dados?
+
+1 Opção:Access to Management VMs(ex:Vcenter)
+Obter acesso ao componentes de gerenciamento como vCenter.
+
+Em alguma ocasiões , não é possível obter acesso a VMs 
+de gerenciamento, especialmente se as migrações forem lideradas
+por uma organização parceira.Nesse caso usariamos:
+Opção 2 - Export with 3rd party tools (ex:RVTools)- produtos de terceiros para descobrir os dados. 
+RVTools é uma ferramenta muito comum usada para exportar dados de um ambiente para o vCenter.
+ 
+ 
+ 3 e ultima opção: Customer provided Discovery data
+ Na ultima opção, o proprio cliente pode capturar esses dados e forncecê-los à
+ empresa parceira que executará todo o proesso de migração de ponta a ponta.
+ 
+ Usando esses tres metodos de descoberta, estamos gerando ou criando um
+ inventário de ativos (Inventory of assets).
+ Este inventário irá capturar todas as informações  necessárias sobre a origem.
+ 
+ A proxima etapa é executar algumas avaliações (Run Assesmentes) , ou seja dar uma olhada mais de perto 
+ nos dados e documentar  os resultados para os objetivos da descoberta.
+ Inventory of assets -> Run Assesments.
+ 
+ 
+ ----Assesments types ---
+ Avaliações que podem ser executadas nos dados de descoberta:
+ 
+ Application Assesments: Avaliações de aplicativos são sobre tipos de aplicativos
+ encontrando que tipos de aplicativos são executados na VM, a complexidade 
+ e a dependencia desses aplicativos e assim por diante.
+ 
+ Computer Assesments: Avaliações de computação  tratam de encontrar os requisitos 
+ necessários de CPU e memória.
+ 
+ Storage and Data Assesments: Armazenamento e avaliação de dados para classificar
+ tipos de armazenamento e classificações de dados.
+ 
+ Network and Security Assesments:A avaliação de rede e segurança  ajudaria a determinar
+ como configurar a rede para o ambiente de destino.
+ 
+ Compliance Assesments: A organização deseja seguir as melhores práticas 
+ de conformidade para manter a reputação de seus negócios.
+ 
