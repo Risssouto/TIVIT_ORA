@@ -1,0 +1,44 @@
+Hypervisor Layer: Software Layer that allows the creation and interaction
+between virtual and physical hardware resources.
+
+Hypervisor (vSphere - VMware vSphere)
+Uma camada de Hypervisor é uma camada de software que cria uma abstração
+sobre a infraestrutura física e que permite implantar e gerenciar recursos
+de uma máquina virtual.
+
+VMware vSphere is a combination of vcenter and ESXi together.
+VMware vSphere é chamado de camada de hipervisor e é principalmente a combinação
+de dois produtos: O ESXi que é instalado nos servidores físicos e,o vcenter que é
+usado para gerenciar os servidores e as VMs.
+
+O principal objetivo de vSphere é que ele separa o sistema operacional do 
+Hardware subjacente e apresenta uma plataforma x86 completa para o sistema operacional.
+
+
+Allows separation of Operating System from Hardware.
+Com essa separação, vSphere pode agrupar recursos físicos e aloca-los para cada máquina virtual,
+o que siginifica que cada VM compartilharia  os recursos de um único servidor de hardware.
+
+Virtual Machines Share physical resources (CPU,Memory, etc)
+
+---- Virtual Resources and Attributes ----
+Virtual CPU (vCPU) -É uma parte da CPU física destinada a VM.
+Virtual Memory (vMemory) - Pode ser alocada para máquinas virtuais
+
+Como combinar recursos físicos com o virtual? Aqui entra em cena o excesso de assinatura (Oversubscription - Physical
+to ritual radio).
+A sobreassinatura  é a proporção entre os recursos físicos  e virtuais.
+
+Virtual Machine File System (VMFS) - Sistema de arquivo de máquina virtual.
+As VMs precisam ser implantadas em um sistema de arquivos específico.
+
+Virtual Machine Disk (VMDK - Tick and Thin provisioning).
+Quando você cria uma VM , ela deve ter um disco virtual associado a ela, e é ai que você 
+instala os sistemas operacionais , aplicativos  e assim por diante.
+Há dois tipos de provisionamento de disco virtual: Provisionamento grosso e provisionamento fino.
+No provisionamento grosso quando se cria um disco virtual , quantidade de gigas existente no disco
+são alocados ou foram consumidos  do armazenamento físico.
+No provisionamento fino, apenas o uso real é considerado.
+
+vSphere é a camada de virtualização formada junto com a combinação  de um VMware ESXi e Vcenter
+
