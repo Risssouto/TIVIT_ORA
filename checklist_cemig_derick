@@ -1,0 +1,65 @@
+ssh serpens
+[root@serpens ~]# ps -ef | grep pmon
+[root@serpens ~]# sudo su - oracle
+[oracle@serpens ~]$ . oraenv
+ORACLE_SID = [oracle] ? PSC
+The Oracle base has been set to /oracle/PSC
+[oracle@serpens ~]$ cd derick
+[oracle@serpens derick]$ ls -ltr
+-rw-r--r-- 1 oracle oinstall 4809261 Jan 14 23:38 derick.html
+-rw-r--r-- 1 oracle oinstall    5580 Jan 18 01:23 checklist_archive_hora.sql
+-rw-r--r-- 1 oracle oinstall     686 Jan 20 23:50 arc.sql
+-rw-r--r-- 1 oracle oinstall    2342 Jan 29 03:30 sql_PSCsql.sql
+-rw-r--r-- 1 oracle oinstall      82 Jan 30 23:11 prp.lst
+[oracle@serpens derick]$ sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 31 00:10:45 2026
+Version 19.27.0.0.0
+
+Copyright (c) 1982, 2024, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.27.0.0.0
+
+SQL> @arc.sql
+ou
+SQL> @conn
+Disconnected from Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.27.0.0.0
+Connected.
+
+Session altered.
+
+00:11:34 SYS@PSC.serpens > @arc (fica mais estruturado)
+
+a261594@PLNAP-BHEPONT01:/$ ssh aquarius
+root@aquarius:/# ps -ef | grep pmon
+    root 14811730 44368428   0 00:19:16 pts/20  0:00 grep pmon
+  orapbi 22873144        1   0   Jan 28      -  0:11 ora_pmon_PBI
+root@aquarius:/# sudo su - orapbi
+[YOU HAVE NEW MAIL]
+aquarius:orapbi 1> cd derick
+aquarius:orapbi 2> ls -ltr
+-rw-r--r--    1 orapbi   dba              14 Oct 25 2024  sql_id_12g.sql
+-rw-r--r--    1 orapbi   dba            2341 Oct 25 2024  sql_PBIsql.sql
+-rw-r--r--    1 orapbi   dba            2180 Jan 28 23:08 tab.sql
+-rw-r--r--    1 orapbi   dba            1517 Jan 30 23:10 checklist_pbi.sql
+-rw-r--r--    1 orapbi   dba              82 Jan 30 23:11 prp.lst
+aquarius:orapbi 3> sqlplus / as sysdba
+
+SQL*Plus: Release 19.0.0.0.0 - Production on Sat Jan 31 00:19:54 2026
+Version 19.18.0.0.0
+
+Copyright (c) 1982, 2022, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 19c Enterprise Edition Release 19.0.0.0.0 - Production
+Version 19.18.0.0.0
+
+SQL> @checklist_pbi.sql
+
+
+
