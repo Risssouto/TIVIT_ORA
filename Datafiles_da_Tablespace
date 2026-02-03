@@ -1,0 +1,35 @@
+set lines 1000
+               set pages 2000
+               col tablespace_name for a20
+               col name for a70
+               col Total(Mb) for a20
+               col status1 for a7
+               col status2 for a7
+               col status3 for a9
+               col online_status for a10
+               col st_backup for a10
+               col recover for a7
+               col error for a10
+               col "FILE#" for 9999
+               SELECT  df.tablespace_name,
+                              d.FILE#,
+                              d.NAME,
+                             df.autoextensible,
+                             to_char(round(df.bytes/1024/1024)) "Total(Mb)",
+                              d.status   VDTFILE,
+                              df.STATUS  DDTFILE,
+                              dh.status  HDTFILE,
+                             --df.online_status,
+                              b.STATUS st_backup,
+                              dh.RECOVER
+                              --dh.ERROR
+               from v$datafile d,
+                               dba_data_files df,       
+                              v$backup b,
+                             v$datafile_header dh
+               where  d.FILE# = dh.FILE#(+)
+               and        d.FILE# = b.FILE#(+)
+               and        d.FILE# = df.file_id(+)
+               --and     df.tablespace_name LIKE 'IFSAPP_HIST_DATA'
+               and df.tablespace_name = '&tablespace'
+               order by d.FILE#,df.tablespace_name, d.NAME;
