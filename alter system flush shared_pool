@@ -1,0 +1,24 @@
+Pessoal, se o pessoal de DPO pedir pra vocês verificarem o catalog do RMAN naquele grupo do Flush é só fazerem o seguinte
+ 
+acessa o IP de SP
+
+ 
+########################################################################
+# -> PRODUCAO                                                          #
+#         1 ) VERI0015  - 172.18.101.15   - Catalogo RMAN RJ           #
+#         2 ) VERI0208  - 172.16.101.208  - Catalogo RMAN SP           #
+########################################################################
+
+ssh 172.18.101.15
+sudo su - oracle
+seta o banco atraves do menu
+sqlplus / as sysdba
+Valida se o banco está open, executando o script Valida status do Banco e Backup e depois o alter abaixo
+ 
+alter system flush shared_pool;
+
+
+ 
+
+ 
+
