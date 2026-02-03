@@ -1,0 +1,34 @@
+Hoje, por volta das 15h, tivemos um impacto na malha da Alelo devido a um usuário que estava abrindo muitas sessões inativas — aproximadamente 160 — o que impediu a criação de novas conexões no banco de dados e, consequentemente, causou o abort dos JOBs.
+
+Como ação inicial, encerramos todas as sessões inativas desse usuário. No entanto, as conexões eram restabelecidas logo em seguida, dificultando a eliminação completa das sessões. Diante disso, foi sugerido o bloqueio do usuário e, com o de acordo da Alelo, o procedimento foi realizado.
+
+Solicito que o ambiente seja monitorado para evitar novos problemas na malha. A princípio, não devem ocorrer mais impactos, o usuário não deve ser desbloqueado até nova orientação.
+
+
+Servidor - bnoracprd09 (ssh 172.26.232.111)
+Banco - BDDIPRD1
+
+
+
+
+****** Comandos utilizados ******
+
+-- Valida número de processos e sessões e o valor máximo
+
+set pages 1000
+set lines 1000
+
+Select * from v$resource_limit;
+
+
+-- Valida número de sessões por usuário
+
+Select count(*),username from gv$session where status = 'INACTIVE' group by username;
+
+
+-- Script para efetuar o kill do usuário ofensor
+
+SELECT 'ALTER SYSTEM KILL SESSION '''||sid||''||','||serial#||',@'||inst_id||''' immediate;'
+FROM GV$SESSION
+WHERE username = 'USAUTOMACAOUSER'
+  AND status = 'INACTIVE';
