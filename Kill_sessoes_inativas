@@ -1,0 +1,1 @@
+SELECT 'ALTER SYSTEM KILL SESSION '''||sid||','||serial#||',@'||inst_id||''' IMMEDIATE;'  from gv$session where status = 'INACTIVE';
